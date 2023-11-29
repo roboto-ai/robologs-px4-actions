@@ -7,6 +7,7 @@ Actions can range from simple data transformations to more complex algorithms, a
 The package currently includes the following Actions:
 
 - `ulg_info`: Extract metadata from a .ulg file.
+- `ulg_to_csv`: Convert .ulg files to .csv files.
 
 # Prerequisites
 

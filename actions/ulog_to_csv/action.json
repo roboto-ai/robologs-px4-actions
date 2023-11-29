@@ -1,0 +1,41 @@
+{
+    "name": "ulog_to_csv",
+    "description": "This Actions converts .ulg files to .csv files",
+    "parameters": [
+        {
+            "name": "MESSAGES",
+            "required": false,
+            "description": "Comma-separated list of messages to extract. For example: battery_status,actuator_armed"
+        },
+	{
+            "name": "DELIMITER",
+            "required": false,
+            "description": "Use delimiter in CSV, default is ','",
+	    "default": ","
+        },
+	{
+            "name": "TIME_START",
+            "required": false,
+            "description": "Start time for processing logs [s]"
+        },
+	{
+            "name": "TIME_END",
+            "required": false,
+            "description": "Finish time for processing logs [s]"
+        }
+
+    ],
+    "compute_requirements": {
+        "vCPU": 512,
+        "memory": 1024,
+        "storage": 21
+    },
+    "tags": [
+        "px4",
+        "ulg",
+	"ulog"
+    ],
+    "metadata": {
+        "github_url": "https://github.com/roboto-ai/robologs-px4-actions/tree/main/actions/ulog_to_csv"
+    }
+}
