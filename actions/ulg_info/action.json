@@ -1,0 +1,24 @@
+{
+    "name": "ulg_info",
+    "description": "This Actions get .ulg metadata",
+    "parameters": [
+        {
+            "name": "HIDDEN",
+            "required": false,
+            "description": "Hide metadata markdown files.",
+            "default": "True"
+        }
+    ],
+    "compute_requirements": {
+        "vCPU": 512,
+        "memory": 1024,
+        "storage": 21
+    },
+    "tags": [
+        "px4",
+        "ulg"
+    ],
+    "metadata": {
+        "github_url": "https://github.com/roboto-ai/robologs-px4-actions/tree/main/actions/ulg_info"
+    }
+}
