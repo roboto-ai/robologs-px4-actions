@@ -6,8 +6,8 @@ Actions can range from simple data transformations to more complex algorithms, a
 
 The package currently includes the following Actions:
 
-- `ulg_info`: Extract metadata from a .ulg file.
-- `ulg_to_csv`: Convert .ulg files to .csv files.
+- `ulog_info`: Extract metadata from a .ulg file.
+- `ulog_to_csv`: Convert .ulg files to .csv files.
 
 # Prerequisites
 
@@ -22,13 +22,13 @@ The package currently includes the following Actions:
 
 # Quickstart
 
-Try an Action called: `ulg_info`:
+Try an Action called: `ulog_info`:
 
 ```bash
 
 # 0. Clone this repository
 git clone https://github.com/roboto-ai/robologs-px4-actions.git
-cd robologs-px4-actions/actions/ulg_info/
+cd robologs-px4-actions/actions/ulog_info/
 
 # 1. Set up a virtual environment for this project and install dependencies, which includes the `roboto` CLI:
 ./scripts/setup.sh
