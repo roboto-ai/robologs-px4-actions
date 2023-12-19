@@ -37,7 +37,4 @@ docker run --rm -it \
     -v $output_dir:/output \
     -e ROBOTO_INPUT_DIR=/input \
     -e ROBOTO_OUTPUT_DIR=/output \
-    -e ROBOTO_PARAM_TIME_START=3 \
-    -e ROBOTO_PARAM_TIME_END=5 \
-    -e ROBOTO_PARAM_MESSAGES=battery_status \
     ulog_to_csv:latest
