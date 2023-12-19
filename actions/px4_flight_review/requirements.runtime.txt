@@ -1,0 +1,8 @@
+# Python packages to install within the Docker image associated with this Action.
+roboto
+#bokeh==3.0.0
+pyulog
+scipy
+pyfftw
+img2pdf
+selenium

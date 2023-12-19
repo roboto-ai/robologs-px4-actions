@@ -1,0 +1,3 @@
+[submodule "actions/px4_flight_review/src/px4_flight_review/flight_review"]
+	path = actions/px4_flight_review/src/px4_flight_review/flight_review
+	url = git@github.com:roboto-ai/flight_review.git

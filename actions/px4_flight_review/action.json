@@ -1,0 +1,24 @@
+{
+    "name": "px4_flight_review",
+    "description": "This Action creates a .html file with PX4 Flight Plots",
+    "compute_requirements": {
+        "vCPU": 512,
+        "memory": 1024,
+        "storage": 21
+    },
+    "parameters": [
+    {
+    "name": "SAVE_PDF",
+    "required": false,
+    "description": "Set True to save a .pdf",
+    "default": "False"
+    }
+    ],
+    "tags": [
+        "px4",
+        "ulg"
+    ],
+    "metadata": {
+        "github_url": "https://github.com/roboto-ai/robologs-px4-actions/tree/main/actions/px4_flight_review"
+    }
+}
