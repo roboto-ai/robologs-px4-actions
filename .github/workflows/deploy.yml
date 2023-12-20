@@ -25,5 +25,8 @@ jobs:
     - name: Run setup script
       run: ./actions/px4_flight_review/scripts/setup.sh
 
+    - name: Run setup script
+      run: ./actions/px4_flight_review/scripts/build.sh
+      
     - name: Run deploy script
       run: ./actions/px4_flight_review/scripts/deploy.sh
