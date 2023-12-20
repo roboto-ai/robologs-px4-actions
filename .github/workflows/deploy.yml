@@ -21,23 +21,23 @@ jobs:
         run: |
           changed_dirs=$(git diff --name-only HEAD^ HEAD | grep '^actions/' | cut -d'/' -f1-2 | uniq)
           if [ -z "$changed_dirs" ]; then
-            echo "HAS_CHANGES=false" >> $GITHUB_ENV
-            echo "MATRIX=[]" >> $GITHUB_ENV
+            echo "has-changes=false" >> $GITHUB_ENV
+            echo "matrix=[]" >> $GITHUB_ENV
           else
             matrix=$(echo "$changed_dirs" | jq -R -s -c 'split("\n")[:-1]')
-            echo "MATRIX=$matrix" >> $GITHUB_ENV
-            echo "HAS_CHANGES=true" >> $GITHUB_ENV
+            echo "matrix=$matrix" >> $GITHUB_ENV
+            echo "has-changes=true" >> $GITHUB_ENV
           fi
         shell: bash
 
   build-and-deploy:
     needs: prepare-matrix
     runs-on: ubuntu-latest
-    if: ${{ env.HAS_CHANGES == 'true' }}
+    if: needs.prepare-matrix.outputs.has-changes == 'true'
     strategy:
       fail-fast: false
       matrix:
-        action: ${{fromJson(env.MATRIX)}}
+        action: ${{fromJson(needs.prepare-matrix.outputs.matrix)}}
     steps:
       - uses: actions/checkout@v2
         with:
@@ -56,5 +56,4 @@ jobs:
         run: ${{ matrix.action }}/scripts/build.sh
       - name: Run deploy script
         run: ${{ matrix.action }}/scripts/deploy.sh roboto-public
-
 
