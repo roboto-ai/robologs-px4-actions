@@ -10,19 +10,26 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
+      has-changes: ${{ steps.set-matrix.outputs.has-changes }}
     steps:
     - uses: actions/checkout@v2
       with:
         submodules: 'recursive'
     - id: set-matrix
       run: |
-        # Generate a JSON array of modified action directories
-        changed_dirs=$(git diff --name-only HEAD^ HEAD | grep '^actions/' | cut -d'/' -f1-3 | uniq | jq -R -s -c 'split("\n")[:-1]')
-        echo "::set-output name=matrix::${changed_dirs}"
+        changed_dirs=$(git diff --name-only HEAD^ HEAD | grep '^actions/' | cut -d'/' -f1-3 | uniq)
+        if [ -z "$changed_dirs" ]; then
+          echo "::set-output name=has-changes::false"
+        else
+          matrix=$(echo "$changed_dirs" | jq -R -s -c 'split("\n")[:-1]')
+          echo "::set-output name=matrix::$matrix"
+          echo "::set-output name=has-changes::true"
+        fi
 
   build-and-deploy:
     needs: prepare-matrix
     runs-on: ubuntu-latest
+    if: needs.prepare-matrix.outputs.has-changes == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -45,3 +52,4 @@ jobs:
       run: ${{ matrix.action }}/scripts/build.sh
     - name: Run deploy script
       run: ${{ matrix.action }}/scripts/deploy.sh roboto-public
+
