@@ -1,0 +1,29 @@
+name: Deploy Workflow
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x' # Specify the Python version here
+
+    - name: Set up Roboto Config
+      run: |
+        mkdir -p ~/.roboto
+        echo '${{ secrets.ROBOTO_CONFIG }}' > ~/.roboto/config.json
+
+    - name: Run setup script
+      run: ./actions/px4_flight_review/scripts/setup.sh
+
+    - name: Run deploy script
+      run: ./actions/px4_flight_review/scripts/deploy.sh
