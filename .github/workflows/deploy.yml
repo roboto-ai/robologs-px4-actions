@@ -1,3 +1,10 @@
+name: Deploy Workflow
+
+on:
+  push:
+    branches:
+      - dev
+
 jobs:
   prepare-matrix:
     runs-on: ubuntu-latest
@@ -49,4 +56,5 @@ jobs:
         run: ${{ matrix.action }}/scripts/build.sh
       - name: Run deploy script
         run: ${{ matrix.action }}/scripts/deploy.sh roboto-public
+
 
