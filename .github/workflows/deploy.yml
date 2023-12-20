@@ -53,6 +53,6 @@ jobs:
     - name: Run build script
       run: ${{ matrix.action }}/scripts/build.sh
     - name: Run test script
-      run: ${{ matrix.action }}/scripts/test.sh
+      run: sudo ${{ matrix.action }}/scripts/test.sh
     - name: Run deploy script
       run: ${{ matrix.action }}/scripts/deploy.sh roboto-public
