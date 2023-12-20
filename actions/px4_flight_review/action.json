@@ -2,7 +2,7 @@
     "name": "px4_flight_review",
     "description": "This Action creates a .html file with PX4 Flight Plots",
     "compute_requirements": {
-        "vCPU": 512,
+        "vCPU": 1024,
         "memory": 1024,
         "storage": 21
     },
