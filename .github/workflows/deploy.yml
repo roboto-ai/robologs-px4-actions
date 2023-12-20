@@ -6,29 +6,42 @@ on:
       - dev
 
 jobs:
-  build-and-deploy:
+  prepare-matrix:
     runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+    - uses: actions/checkout@v2
       with:
-        submodules: 'recursive'  # Recursively clone submodules
+        submodules: 'recursive'
+    - id: set-matrix
+      run: |
+        # Generate a JSON array of modified action directories
+        changed_dirs=$(git diff --name-only HEAD^ HEAD | grep '^actions/' | cut -d'/' -f1-3 | uniq | jq -R -s -c 'split("\n")[:-1]')
+        echo "::set-output name=matrix::${changed_dirs}"
 
+  build-and-deploy:
+    needs: prepare-matrix
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        action: ${{fromJson(needs.prepare-matrix.outputs.matrix)}}
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: 'recursive'
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
-        python-version: '3.10' # Specify the Python version here
-
+        python-version: '3.10'
     - name: Set up Roboto Config
       run: |
         mkdir -p ~/.roboto
         echo '${{ secrets.ROBOTO_CONFIG }}' > ~/.roboto/config.json
-
     - name: Run setup script
-      run: ./actions/px4_flight_review/scripts/setup.sh
-
+      run: ${{ matrix.action }}/scripts/setup.sh
     - name: Run build script
-      run: ./actions/px4_flight_review/scripts/build.sh
-      
+      run: ${{ matrix.action }}/scripts/build.sh
     - name: Run deploy script
-      run: ./actions/px4_flight_review/scripts/deploy.sh roboto-public
+      run: ${{ matrix.action }}/scripts/deploy.sh roboto-public
