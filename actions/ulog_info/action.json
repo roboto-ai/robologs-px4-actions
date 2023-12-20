@@ -10,8 +10,8 @@
         }
     ],
     "compute_requirements": {
-        "vCPU": 512,
-        "memory": 1024,
+        "vCPU": 1024,
+        "memory": 2048,
         "storage": 21
     },
     "tags": [
