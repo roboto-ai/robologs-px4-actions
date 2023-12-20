@@ -31,4 +31,4 @@ jobs:
       run: ./actions/px4_flight_review/scripts/build.sh
       
     - name: Run deploy script
-      run: ./actions/px4_flight_review/scripts/deploy.sh
+      run: ./actions/px4_flight_review/scripts/deploy.sh roboto-public
