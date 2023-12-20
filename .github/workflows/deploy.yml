@@ -19,7 +19,7 @@ jobs:
 
     - id: set-matrix
       run: |
-        changed_dirs=$(git diff --name-only HEAD^ HEAD | grep '^actions/' | cut -d'/' -f1-3 | uniq)
+        changed_dirs=$(git diff --name-only HEAD^ HEAD | grep '^actions/' | cut -d'/' -f1-2 | uniq)
         if [ -z "$changed_dirs" ]; then
           echo "::set-output name=has-changes::false"
         else
