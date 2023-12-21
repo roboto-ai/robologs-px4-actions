@@ -1,6 +1,6 @@
 # px4_flight_review
 
-This Action creates a .html file with the PX3 Flightplots
+This Action creates a .html file with the [PX4 Flight Review](https://github.com/PX4/flight_review) plots
 
 ## Getting started
 
