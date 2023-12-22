@@ -6,6 +6,7 @@ Actions can range from simple data transformations to more complex algorithms, a
 
 The package currently includes the following Actions:
 
+- `tag_ulog`: Scan .ulg files for any errors and emit tags.
 - `ulog_info`: Extract metadata from a .ulg file.
 - `ulog_to_csv`: Convert .ulg files to .csv files.
 - `px4_flight_review`: Generate interactive plots to analyze PX4 flights.

@@ -1,6 +1,8 @@
 # tag_ulog
 
-This Action converts ulg files to csv files
+This Action adds tags to a dataset by scanning ULog files (.ulg) for any ERROR messages. 
+
+Under the hood, it uses the [pyulog](https://github.com/PX4/pyulog) library.
 
 ## Getting started
 
