@@ -8,6 +8,7 @@ The package currently includes the following Actions:
 
 - `ulog_info`: Extract metadata from a .ulg file.
 - `ulog_to_csv`: Convert .ulg files to .csv files.
+- `px4_flight_review`: Generate interactive plots to analyze PX4 flights.
 
 # Prerequisites
 
