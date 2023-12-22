@@ -4,8 +4,8 @@
     "description": "This Action extracts logged messages from an ULog file (.ulg) and applies a tag to the dataset if an ERROR is present. Under the hood, it uses the [pyulog](https://github.com/PX4/pyulog) library.",
 
     "compute_requirements": {
-        "vCPU": 1024,
-        "memory": 2048,
+        "vCPU": 512,
+        "memory": 1024,
         "storage": 21
     },
     "tags": [
