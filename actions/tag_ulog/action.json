@@ -1,0 +1,19 @@
+{
+    "name": "tag_ulog",
+     "short_description": "Add a tag to the dataset if an error is present in the ULog files.",
+    "description": "This Action extracts logged messages from an ULog file (.ulg) and applies a tag to the dataset if an ERROR is present. Under the hood, it uses the [pyulog](https://github.com/PX4/pyulog) library.",
+
+    "compute_requirements": {
+        "vCPU": 1024,
+        "memory": 2048,
+        "storage": 21
+    },
+    "tags": [
+        "px4",
+        "ulg",
+	"ulog"
+    ],
+    "metadata": {
+        "github_url": "https://github.com/roboto-ai/robologs-px4-actions/tree/main/actions/tag_ulog"
+    }
+}
