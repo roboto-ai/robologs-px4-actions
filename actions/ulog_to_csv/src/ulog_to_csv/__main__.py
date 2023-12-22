@@ -6,15 +6,6 @@ from pyulog.ulog2csv import convert_ulog2csv
 from roboto.domain import actions
 
 
-def main(args: argparse.Namespace) -> None:
-    print("Hello World!")
-    print(f"Contents of input directory {args.input_dir}:")
-    for file in args.input_dir.iterdir():
-        print(f"  {file}")
-
-    print(f"Output directory: {args.output_dir}")
-
-
 parser = argparse.ArgumentParser()
 parser.add_argument(
     "-i",
