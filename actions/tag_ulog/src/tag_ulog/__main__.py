@@ -58,6 +58,7 @@ for root, dirs, files in os.walk(args.input_dir):
             full_path = os.path.join(root, file)
             ulog = ULog(full_path, msg_filter, True)
             for m in ulog.logged_messages:
+                print(m.log_level_str() + " " + m.message)
                 if m.log_level_str() == "ERROR":
                     module_name = extract_text_between_brackets(m.message)
                     if module_name is not None:
@@ -65,7 +66,6 @@ for root, dirs, files in os.walk(args.input_dir):
                         if module_name not in put_tags:
                             put_tags.append(module_name)
                     continue
-                print(f"{m.log_level_str()} {m.message}")
 
     with open(output_path_metadata, "w") as json_file:
         metadata_dict = {
