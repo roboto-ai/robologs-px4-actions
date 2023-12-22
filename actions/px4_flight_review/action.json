@@ -1,23 +1,21 @@
 {
     "name": "px4_flight_review",
-    "description": "This Action creates a .html file with PX4 Flight Plots",
+    "short_description": "Generate interactive plots to analyze PX4 flights.",
+    "description": "This Action extracts data from ULog files (.ulg) and generates interactive html plots to analyze PX4 flights. Under the hood, it uses the [flight_review](https://github.com/PX4/flight_review) library that is maintained by the PX4 community.",
     "compute_requirements": {
         "vCPU": 1024,
         "memory": 2048,
         "storage": 21
     },
     "parameters": [
-    {
-    "name": "SAVE_PDF",
-    "required": false,
-    "description": "Set True to save a .pdf",
-    "default": "False"
-    }
+        {
+            "name": "SAVE_PDF",
+            "required": false,
+            "description": "Set True to save a .pdf",
+            "default": "False"
+        }
     ],
-    "tags": [
-        "px4",
-        "ulg"
-    ],
+    "tags": ["px4", "ulg"],
     "metadata": {
         "github_url": "https://github.com/roboto-ai/robologs-px4-actions/tree/main/actions/px4_flight_review"
     }

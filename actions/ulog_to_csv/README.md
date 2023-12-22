@@ -1,6 +1,6 @@
 # ulog_to_csv
 
-This Action converts ulg files to csv files via [pyulog](https://github.com/PX4/pyulog)
+This Action converts data in ULog files (.ulg) to CSV via [pyulog](https://github.com/PX4/pyulog)
 
 ## Getting started
 

@@ -1,6 +1,6 @@
 # ulog_info
 
-This Action gets .ulg metadata via [pyulog](https://github.com/PX4/pyulog)
+This Action extracts metadata from a ULog file (.ulg) via [pyulog](https://github.com/PX4/pyulog)
 
 ## Getting started
 
