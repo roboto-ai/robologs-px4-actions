@@ -15,7 +15,7 @@
             "default": "False"
         }
     ],
-    "tags": ["px4", "ulg"],
+    "tags": ["px4"],
     "metadata": {
         "github_url": "https://github.com/roboto-ai/robologs-px4-actions/tree/main/actions/px4_flight_review"
     }

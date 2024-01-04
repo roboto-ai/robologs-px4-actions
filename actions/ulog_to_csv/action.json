@@ -30,7 +30,7 @@
         "memory": 2048,
         "storage": 21
     },
-    "tags": ["px4", "ulg", "ulog"],
+    "tags": ["px4"],
     "metadata": {
         "github_url": "https://github.com/roboto-ai/robologs-px4-actions/tree/main/actions/ulog_to_csv"
     }
