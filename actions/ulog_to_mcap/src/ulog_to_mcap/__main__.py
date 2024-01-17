@@ -24,9 +24,9 @@ log = logging.getLogger("MyAction")
 
 def load_env_var(env_var: actions.InvocationEnvVar) -> str:
     value = os.getenv(env_var.value)
-    # if not value:
-    #     log.error("Missing required ENV var: '%s'", env_var)
-    #     sys.exit(1)
+    if not value:
+        log.error("Missing required ENV var: '%s'", env_var)
+        sys.exit(1)
     return value
 
 
@@ -48,17 +48,16 @@ def ulog_to_mcap(
 
     data = ulog.data_list
 
-    # topic_delegate = topics.TopicHttpDelegate(
-    #     roboto_service_base_url=user.admin_endpoint,
-    #     http_client=user.admin_delegates.http_client,
-    # )
-
     ROBOTO_SERVICE_URL = load_env_var(actions.InvocationEnvVar.RobotoServiceUrl)
     ORG_ID = load_env_var(actions.InvocationEnvVar.OrgId)
     INVOCATION_ID = load_env_var(actions.InvocationEnvVar.InvocationId)
     INPUT_DIR = load_env_var(actions.InvocationEnvVar.InputDir)
 
     http_client = HttpClient(default_auth=SigV4AuthDecorator("execute-api"))
+
+    topic_delegate = topics.TopicHttpDelegate(
+    roboto_service_base_url=ROBOTO_SERVICE_URL, http_client=http_client)
+
 
     invocation = actions.Invocation.from_id(
         INVOCATION_ID,
@@ -84,10 +83,10 @@ def ulog_to_mcap(
 
     print(dataset_relative_path)
 
-    file_record = dataset.get_file_info(dataset_relative_path)  # <--- HERE. THIS.
+    file_record = dataset.get_file_info(dataset_relative_path)
 
     topic_association = Association(
-        association_id=file_record.file_id,  # <--- ALSO HERE. THE BIG DEAL. :wave: @YvesSchoenberg :wave:
+        association_id=file_record.file_id,
         association_type=AssociationType.File
     )
 
@@ -96,22 +95,20 @@ def ulog_to_mcap(
         message_count = len(d.data["timestamp"])
         schema_checksum = schema_checksum_dict[schema_name]
 
-
-
-        # Creating topic
-        # topic = topics.Topic.create(
-        #     request=topics.CreateTopicRequest(
-        #         association=topic_association,
-        #         org_id="123",
-        #         schema_name=schema_name,
-        #         schema_checksum=schema_checksum,
-        #         topic_name=topic_name,
-        #         message_count=message_count,
-        #         # start_time=start_time,
-        #         # end_time=end_time,
-        #     ),
-        #     topic_delegate=topic_delegate,
-        # )
+        #Creating topic
+        topic = topics.Topic.create(
+            request=topics.CreateTopicRequest(
+                association=topic_association,
+                org_id=ORG_ID,
+                schema_name=schema_name,
+                schema_checksum=schema_checksum,
+                topic_name=topic_name,
+                message_count=message_count,
+                # start_time=start_time,
+                # end_time=end_time,
+            ),
+            topic_delegate=topic_delegate,
+        )
         #
         # for f in d.field_data:
         #     topic.add_message_path(
