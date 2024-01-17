@@ -3,73 +3,123 @@ import os
 import pathlib
 from typing import List
 from pyulog.core import ULog
-import json
-from time import time_ns
+import logging
+import sys
 
-from mcap.writer import Writer
-from roboto.domain import actions
-from ulog_to_mcap.utils import create_json_schema, parse_values_to_json
+from roboto.association import (
+    Association,
+    AssociationType,
+)
+from roboto.domain import actions, datasets, files, topics
+from roboto.http import (
+    HttpClient,
+    SigV4AuthDecorator,
+)
+from roboto.transactions import TransactionManager
+
+from ulog_to_mcap.utils import create_per_topic_mcap_from_ulog
+
+log = logging.getLogger("MyAction")
 
 
-def convert_ulog_to_mcap(ulog_file_path: str,
-                         output_folder_path: str,
-                         messages: List[str] = None):
+def load_env_var(env_var: actions.InvocationEnvVar) -> str:
+    value = os.getenv(env_var.value)
+    # if not value:
+    #     log.error("Missing required ENV var: '%s'", env_var)
+    #     sys.exit(1)
+    return value
+
+
+def ulog_to_mcap(
+    ulog_file_path: str, output_folder_path: str, messages: List[str] = None
+):
     """
     Convert a ULog file to a MCAP file.
     """
-    msg_filter = messages.split(',') if messages else None
+    msg_filter = messages.split(",") if messages else None
     disable_str_exceptions = True
     print(ulog_file_path)
 
-    schema_registry = {}
-
-    # Create schema registry
     ulog = ULog(ulog_file_path, msg_filter, disable_str_exceptions)
 
-    for key in ulog.message_formats:
-        json_schema_topic = create_json_schema(ulog.message_formats[key].fields)
-        schema_registry[key] = json_schema_topic
+    schema_registry_dict, schema_checksum_dict = create_per_topic_mcap_from_ulog(
+        ulog=ulog, output_folder_path=output_folder_path
+    )
 
     data = ulog.data_list
+
+    # topic_delegate = topics.TopicHttpDelegate(
+    #     roboto_service_base_url=user.admin_endpoint,
+    #     http_client=user.admin_delegates.http_client,
+    # )
+
+    ROBOTO_SERVICE_URL = load_env_var(actions.InvocationEnvVar.RobotoServiceUrl)
+    ORG_ID = load_env_var(actions.InvocationEnvVar.OrgId)
+    INVOCATION_ID = load_env_var(actions.InvocationEnvVar.InvocationId)
+    INPUT_DIR = load_env_var(actions.InvocationEnvVar.InputDir)
+
+    http_client = HttpClient(default_auth=SigV4AuthDecorator("execute-api"))
+
+    invocation = actions.Invocation.from_id(
+        INVOCATION_ID,
+        invocation_delegate=actions.InvocationHttpDelegate(
+            roboto_service_base_url=ROBOTO_SERVICE_URL, http_client=http_client
+        ),
+        org_id=ORG_ID,
+    )
+    dataset = datasets.Dataset.from_id(
+        invocation.data_source.data_source_id,
+        datasets.DatasetHttpDelegate(
+            roboto_service_base_url=ROBOTO_SERVICE_URL, http_client=http_client
+        ),
+        files.FileClientDelegate(
+            roboto_service_base_url=ROBOTO_SERVICE_URL, http_client=http_client
+        ),
+        transaction_manager=TransactionManager(
+            roboto_service_base_url=ROBOTO_SERVICE_URL, http_client=http_client
+        )
+    )
+
+    dataset_relative_path = ulog_file_path.relative_to(INPUT_DIR)
+
+    print(dataset_relative_path)
+
+    file_record = dataset.get_file_info(dataset_relative_path)  # <--- HERE. THIS.
+
+    topic_association = Association(
+        association_id=file_record.file_id,  # <--- ALSO HERE. THE BIG DEAL. :wave: @YvesSchoenberg :wave:
+        association_type=AssociationType.File
+    )
+
     for d in data:
+        topic_name = schema_name = d.name
+        message_count = len(d.data["timestamp"])
+        schema_checksum = schema_checksum_dict[schema_name]
 
-        with open(os.path.join(output_folder_path, f"{d.name}.mcap"), "wb") as stream:
-            writer = Writer(stream)
 
-            writer.start()
 
-            schema_id = writer.register_schema(
-                name="sample",
-                encoding="jsonschema",
-                data=json.dumps(schema_registry[d.name]).encode(),
-            )
-
-            channel_id = writer.register_channel(
-                schema_id=schema_id,
-                topic=d.name,
-                message_encoding="json",
-            )
-
-            for i in range(len(d.data['timestamp'])):
-                values = list()
-                for f in d.field_data:
-                    values.append((f.field_name, f.type_str, d.data[f.field_name][i]))
-                print(values)
-                json_msg_instance = parse_values_to_json(values)
-                print(json_msg_instance)
-                # print(type(json_msg_instance))
-                # for k in json_msg_instance.keys():
-                #     print(k, type(json_msg_instance[k]))
-                #     print(json_msg_instance["key"][0])
-
-                writer.add_message(
-                    channel_id=channel_id,
-                    log_time=time_ns(),
-                    data=json.dumps(json_msg_instance).encode("utf-8"),
-                    publish_time=time_ns(),
-                )
-
-            writer.finish()
+        # Creating topic
+        # topic = topics.Topic.create(
+        #     request=topics.CreateTopicRequest(
+        #         association=topic_association,
+        #         org_id="123",
+        #         schema_name=schema_name,
+        #         schema_checksum=schema_checksum,
+        #         topic_name=topic_name,
+        #         message_count=message_count,
+        #         # start_time=start_time,
+        #         # end_time=end_time,
+        #     ),
+        #     topic_delegate=topic_delegate,
+        # )
+        #
+        # for f in d.field_data:
+        #     topic.add_message_path(
+        #         request=topics.AddMessagePathRequest(
+        #             message_path=f.field_name,
+        #             data_type=f.type_str,
+        #         )
+        #     )
 
 
 parser = argparse.ArgumentParser()
@@ -107,7 +157,6 @@ args = parser.parse_args()
 
 for root, dirs, files in os.walk(args.input_dir):
     for file in files:
-        # Check if the file ends with .ulg
         if file.endswith(".ulg"):
             _, ulg_file_name = os.path.split(file)
             ulg_output_folder_name = ulg_file_name.replace(".ulg", "")
@@ -117,8 +166,8 @@ for root, dirs, files in os.walk(args.input_dir):
                 os.makedirs(output_folder_path, exist_ok=True)
 
             full_path = os.path.join(root, file)
-            convert_ulog_to_mcap(ulog_file_path=full_path,
-                                 output_folder_path=output_folder_path,
-                                 messages=args.messages)
-
-
+            ulog_to_mcap(
+                ulog_file_path=full_path,
+                output_folder_path=output_folder_path,
+                messages=args.messages,
+            )
