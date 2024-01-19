@@ -5,6 +5,7 @@ from typing import List
 from pyulog.core import ULog
 import logging
 import sys
+import pathlib
 
 from roboto.association import (
     Association,
@@ -79,7 +80,7 @@ def ulog_to_mcap(
         )
     )
 
-    dataset_relative_path = ulog_file_path.relative_to(INPUT_DIR)
+    dataset_relative_path = pathlib.Path(ulog_file_path).relative_to(INPUT_DIR)
 
     print(dataset_relative_path)
 
@@ -152,8 +153,8 @@ parser.add_argument(
 
 args = parser.parse_args()
 
-for root, dirs, files in os.walk(args.input_dir):
-    for file in files:
+for root, dirs, f in os.walk(args.input_dir):
+    for file in f:
         if file.endswith(".ulg"):
             _, ulg_file_name = os.path.split(file)
             ulg_output_folder_name = ulg_file_name.replace(".ulg", "")
