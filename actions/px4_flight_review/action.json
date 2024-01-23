@@ -9,10 +9,10 @@
     },
     "parameters": [
         {
-            "name": "SAVE_PDF",
+            "name": "MAPBOX_API_TOKEN",
             "required": false,
-            "description": "Set True to save a .pdf",
-            "default": "False"
+            "description": "Mapbox API Access Token",
+            "default": "pk.eyJ1IjoiYmt1ZW5nIiwiYSI6ImNqb3p2Mjl3ZjAwbDAzdm51YTIxdTBra3kifQ.aEC7iOQQYMshIzS_vTxtlA"
         }
     ],
     "tags": ["px4"],

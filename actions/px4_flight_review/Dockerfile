@@ -8,7 +8,6 @@ ENV DEBIAN_FRONTEND noninteractive
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-
 # Install dependencies required for Python 3.10
 RUN apt-get update && \
     apt-get install -y software-properties-common && \
@@ -25,24 +24,6 @@ RUN apt-get update && apt-get install -y \
     bzip2 \
     xvfb \
     && rm -rf /var/lib/apt/lists/*
-
-# Define the Firefox and geckodriver versions
-ENV FIREFOX_VERSION 92.0
-ENV GECKODRIVER_VERSION 0.31.0
-
-# Install Firefox
-RUN wget --no-verbose -O /tmp/firefox.tar.bz2 \
-    https://ftp.mozilla.org/pub/firefox/releases/${FIREFOX_VERSION}/linux-x86_64/en-US/firefox-${FIREFOX_VERSION}.tar.bz2 \
-    && tar -xjf /tmp/firefox.tar.bz2 -C /opt/ \
-    && ln -s /opt/firefox/firefox /usr/local/bin/firefox \
-    && rm /tmp/firefox.tar.bz2
-
-# Install geckodriver
-RUN wget --no-verbose -O /tmp/geckodriver.tar.gz \
-    https://github.com/mozilla/geckodriver/releases/download/v${GECKODRIVER_VERSION}/geckodriver-v${GECKODRIVER_VERSION}-linux64.tar.gz \
-    && tar -xzf /tmp/geckodriver.tar.gz -C /opt/ \
-    && ln -s /opt/geckodriver /usr/local/bin/geckodriver \
-    && rm /tmp/geckodriver.tar.gz
 
 # Upgrade pip
 RUN python3.10 -m pip install --upgrade pip
