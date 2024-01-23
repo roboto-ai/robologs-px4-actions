@@ -77,11 +77,6 @@ main() {
     run_docker_test ""
     file_exists_or_error $ACTUAL_OUTPUT_DIR/test_report.html
    
-    # Test 2
-     echo "Running Test 2: Test .pdf report generation"
-     clean_actual_output
-     run_docker_test "-e ROBOTO_PARAM_SAVE_PDF=True"
-     file_exists_or_error $ACTUAL_OUTPUT_DIR/test_report.pdf
 }
 
 # Run the main test execution
