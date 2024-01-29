@@ -1,6 +1,7 @@
 import hashlib
 import json
 import os
+import glob
 from mcap.writer import Writer
 from typing import Dict, List, Tuple, Any
 
@@ -16,6 +17,23 @@ TYPE_MAPPING = {
     "uint32_t": "integer",
     "int64_t": "integer",
     "uint64_t": "integer",
+    "float": "number",
+    "double": "number",
+    "bool": "boolean",
+    "char": "string",
+}
+
+
+# Mapping from message definition types to Roboto canonical data types
+TYPE_MAPPING_CANONICAL = {
+    "int8_t": "number",
+    "uint8_t": "number",
+    "int16_t": "number",
+    "uint16_t": "number",
+    "int32_t": "number",
+    "uint32_t": "number",
+    "int64_t": "number",
+    "uint64_t": "number",
     "float": "number",
     "double": "number",
     "bool": "boolean",
@@ -46,6 +64,7 @@ def create_per_topic_mcap_from_ulog(
 
     for d in ulog.data_list:
         output_path_per_topic_mcap = os.path.join(output_folder_path, f"{d.name}.mcap")
+        print(output_path_per_topic_mcap)
         with open(output_path_per_topic_mcap, "wb") as stream:
             writer = Writer(stream)
             writer.start()
@@ -189,3 +208,25 @@ def convert_value(field_type: str, value: Any) -> Any:
         return str(value)
     else:
         return value
+
+
+def upload_mcap_files_to_dataset(directory: str, dataset) -> None:
+    """
+    Uploads all MCAP files in a given directory to a dataset.
+
+    Args:
+    - directory: The directory containing the MCAP files.
+    - dataset: The dataset to which the MCAP files will be uploaded.
+
+    Returns:
+    - None
+    """
+    mcap_files = []
+    for root, dirs, files in os.walk(directory):
+        for file in glob.glob(os.path.join(root, '*.mcap')):
+            _, file_name = os.path.split(file)
+            absolute_path = os.path.abspath(file)
+            mcap_files.append(absolute_path)
+            dataset.upload_file(absolute_path, file_name)
+
+    return mcap_files
