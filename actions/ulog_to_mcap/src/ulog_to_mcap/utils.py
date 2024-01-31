@@ -1,11 +1,11 @@
 import hashlib
 import json
 import os
+import pathlib
 import glob
 from mcap.writer import Writer
 from typing import Dict, List, Tuple, Any
-
-from roboto.domain import actions
+from roboto.domain import topics
 
 # Mapping from message definition types to JSON schema types
 TYPE_MAPPING = {
@@ -26,23 +26,23 @@ TYPE_MAPPING = {
 
 # Mapping from message definition types to Roboto canonical data types
 TYPE_MAPPING_CANONICAL = {
-    "int8_t": "number",
-    "uint8_t": "number",
-    "int16_t": "number",
-    "uint16_t": "number",
-    "int32_t": "number",
-    "uint32_t": "number",
-    "int64_t": "number",
-    "uint64_t": "number",
-    "float": "number",
-    "double": "number",
-    "bool": "boolean",
-    "char": "string",
+    "int8_t": topics.CanonicalDataType.Number,
+    "uint8_t": topics.CanonicalDataType.Number,
+    "int16_t": topics.CanonicalDataType.Number,
+    "uint16_t": topics.CanonicalDataType.Number,
+    "int32_t": topics.CanonicalDataType.Number,
+    "uint32_t": topics.CanonicalDataType.Number,
+    "int64_t": topics.CanonicalDataType.Number,
+    "uint64_t": topics.CanonicalDataType.Number,
+    "float": topics.CanonicalDataType.Number,
+    "double": topics.CanonicalDataType.Number,
+    "bool": topics.CanonicalDataType.Boolean,
+    "char": topics.CanonicalDataType.String,
 }
 
 
 def create_per_topic_mcap_from_ulog(
-    ulog: Any, output_folder_path: str
+    ulog: Any, output_folder_path: str, dataset: Any
 ) -> Tuple[Dict[str, Any], Dict[str, str]]:
     """
     Creates per-topic MCAP files from a ULog object.
@@ -56,14 +56,16 @@ def create_per_topic_mcap_from_ulog(
     """
     schema_registry_dict = {}
     schema_checksum_dict = {}
+    topic_name_to_file_id_dict = {}
 
     for key in ulog.message_formats:
         json_schema_topic = create_json_schema(ulog.message_formats[key].fields)
         schema_registry_dict[key] = json_schema_topic
         schema_checksum_dict[key] = compute_checksum(json_schema_topic)
 
-    for d in ulog.data_list:
-        output_path_per_topic_mcap = os.path.join(output_folder_path, f"{d.name}.mcap")
+    for d in sorted(ulog.data_list, key=lambda obj: obj.name):
+        file_name = f"{d.name}.mcap"
+        output_path_per_topic_mcap = os.path.join(output_folder_path, file_name)
         print(output_path_per_topic_mcap)
         with open(output_path_per_topic_mcap, "wb") as stream:
             writer = Writer(stream)
@@ -95,7 +97,10 @@ def create_per_topic_mcap_from_ulog(
 
             writer.finish()
 
-    return schema_registry_dict, schema_checksum_dict
+            dataset.upload_file(pathlib.Path(output_path_per_topic_mcap), file_name)
+            topic_name_to_file_id_dict[d.name] = dataset.get_file_info(file_name).file_id
+
+    return topic_name_to_file_id_dict
 
 
 def compute_checksum(json_schema: Dict[str, Any]) -> str:
@@ -227,6 +232,6 @@ def upload_mcap_files_to_dataset(directory: str, dataset) -> None:
             _, file_name = os.path.split(file)
             absolute_path = os.path.abspath(file)
             mcap_files.append(absolute_path)
-            dataset.upload_file(absolute_path, file_name)
+            dataset.upload_file(pathlib.Path(absolute_path), file_name)
 
     return mcap_files
