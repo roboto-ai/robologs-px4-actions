@@ -19,7 +19,7 @@ from roboto.http import (
 )
 from roboto.transactions import TransactionManager
 
-import ulog_to_mcap.utils as utils
+import ulog_ingestion.utils as utils
 
 log = logging.getLogger("Ingesting ULog files to Roboto")
 

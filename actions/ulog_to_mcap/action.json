@@ -1,9 +1,0 @@
-{
-    "name": "ulog_to_mcap",
-    "description": "Convert ULog files (.ulg) to per-topic MCAP files (.mcap).",
-    "compute_requirements": {
-        "vCPU": 4096,
-        "memory": 8192,
-        "storage": 21
-    }
-}

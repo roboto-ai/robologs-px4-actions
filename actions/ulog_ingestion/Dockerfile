@@ -6,6 +6,6 @@ FROM --platform=linux/amd64 public.ecr.aws/docker/library/python:${PYTHON_MAJOR}
 COPY requirements.runtime.txt ./
 RUN python -m pip install --upgrade pip setuptools && python -m pip install -r requirements.runtime.txt
 
-COPY src/ulog_to_mcap/ ./ulog_to_mcap
+COPY src/ulog_ingestion/ ./ulog_ingestion
 
-ENTRYPOINT [ "python", "-m", "ulog_to_mcap" ]
+ENTRYPOINT [ "python", "-m", "ulog_ingestion" ]

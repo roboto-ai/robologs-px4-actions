@@ -37,4 +37,4 @@ docker run --rm -it \
     -v $output_dir:/output \
     -e ROBOTO_INPUT_DIR=/input \
     -e ROBOTO_OUTPUT_DIR=/output \
-    ulog_to_mcap:latest
+    ulog_ingestion:latest

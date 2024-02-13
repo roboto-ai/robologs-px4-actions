@@ -1,6 +1,6 @@
-# ulog_to_mcap
+# ulog_ingestion
 
-Convert ULog files (.ulg) to per-topic MCAP files (.mcap).
+This Action processes ULog files for visualization within the Roboto platform.
 
 ## Getting started
 
