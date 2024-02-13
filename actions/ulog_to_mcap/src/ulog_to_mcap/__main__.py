@@ -29,10 +29,10 @@ def load_env_var(env_var: actions.InvocationEnvVar) -> str:
     Load an environment variable, and exit if it is not found.
 
     Args:
-        env_var: The environment variable to load.
+    - env_var: The environment variable to load.
 
     Returns:
-        The value of the environment variable.
+    - The value of the environment variable.
     """
     value = os.getenv(env_var.value)
     if not value:
@@ -46,7 +46,7 @@ def setup_env():
     Set up the environment for the action.
 
     Returns:
-        A tuple containing the organization ID, input directory, topic delegate, and dataset.
+    - A tuple containing the organization ID, input directory, topic delegate, and dataset.
     """
     roboto_service_url = load_env_var(actions.InvocationEnvVar.RobotoServiceUrl)
     org_id = load_env_var(actions.InvocationEnvVar.OrgId)
@@ -84,6 +84,9 @@ def setup_env():
 
 
 def process_wrapper(args):
+    """
+    Wrapper function for parallel processing.
+    """
     return process_data(*args)
 
 
@@ -99,6 +102,24 @@ def process_data(
     output_dir_path_mcap,
     output_dir_temp,
 ):
+    """
+    Process the data from a ULog file.
+
+    Args:
+    - d: The ULog data to process.
+    - schema_registry_dict: A dictionary containing the JSON schemas for each topic.
+    - dataset: The dataset to which to upload the MCAP files.
+    - message_names_with_multi_id_list: A list of message names with multi IDs.
+    - schema_checksum_dict: A dictionary containing the checksums for each schema.
+    - org_id: The organization ID.
+    - topic_association: The association for the topic.
+    - topic_delegate: The topic delegate.
+    - output_dir_path_mcap: The path to the output directory for the MCAP files.
+    - output_dir_temp: The path to the temporary output directory.
+
+    Returns:
+    - None
+    """
     topic_name = schema_name = d.name
 
     if topic_name in schema_registry_dict:
@@ -137,9 +158,7 @@ def process_data(
             output_path_per_topic_mcap, d, schema_registry_dict
         )
 
-        relative_file_name = output_path_per_topic_mcap.split(output_dir_temp)[1][
-            1:
-        ]  # Adjust slicing as needed
+        relative_file_name = output_path_per_topic_mcap.split(output_dir_temp)[1][1:]
 
         # Upload MCAP File
         dataset.upload_file(
@@ -162,20 +181,20 @@ def process_data(
                 version=1,
             )
         )
+        return
 
 
 def ingest_ulog(ulog_file_path: str, messages: List[str] = None):
     """
-    For each message in the .ulg file, a .mcap file is created.
-    The .mcap files are then uploaded to Roboto. For each message, a topic is created in Roboto,
-    message paths are added to the topic and a default representation is set for the topic.
+
+    This function creates topic entries, message path records, and MCAP files from a ULog file.
 
     Args:
-        ulog_file_path: Path to the .ulg file.
-        messages: List of messages to process, separated by commas.
+    - ulog_file_path: Path to the .ulg file.
+    - messages: List of messages to process, separated by commas.
 
     Returns:
-        None
+    - None
     """
     msg_filter = messages.split(",") if messages else None
     print(ulog_file_path)
