@@ -256,7 +256,9 @@ def create_per_topic_mcap_from_ulog(
     return
 
 
-def setup_output_folder_structure(ulog_file_path: str, input_dir: str) -> Tuple[str, str]:
+def setup_output_folder_structure(
+    ulog_file_path: str, input_dir: str
+) -> Tuple[str, str]:
     """
     Set up the output folder structure for the .mcap files.
 

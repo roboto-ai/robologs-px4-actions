@@ -46,7 +46,7 @@ def setup_env():
     Set up the environment for the action.
 
     Returns:
-    - A tuple containing the organization ID, input directory, topic delegate, and dataset.
+    - A tuple containing the organization ID, input directory, output directory, topic delegate, and dataset.
     """
     roboto_service_url = load_env_var(actions.InvocationEnvVar.RobotoServiceUrl)
     org_id = load_env_var(actions.InvocationEnvVar.OrgId)
