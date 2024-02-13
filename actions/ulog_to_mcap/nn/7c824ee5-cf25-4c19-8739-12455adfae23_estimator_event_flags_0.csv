@@ -1,5 +1,0 @@
-timestamp,timestamp_sample,information_event_changes,warning_event_changes,gps_checks_passed,reset_vel_to_gps,reset_vel_to_flow,reset_vel_to_vision,reset_vel_to_zero,reset_pos_to_last_known,reset_pos_to_gps,reset_pos_to_vision,starting_gps_fusion,starting_vision_pos_fusion,starting_vision_vel_fusion,starting_vision_yaw_fusion,yaw_aligned_to_imu_gps,gps_quality_poor,gps_fusion_timout,gps_data_stopped,gps_data_stopped_using_alternate,height_sensor_timeout,stopping_navigation,invalid_accel_bias_cov_reset,bad_yaw_using_gps_course,stopping_mag_use,vision_data_stopped,emergency_yaw_reset_mag_stopped,emergency_yaw_reset_gps_yaw_stopped
-1432478,1430500,1,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-13146352,13144603,2,0,0,0,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-52876667,52875148,3,1,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-70104573,70102585,4,1,0,0,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
