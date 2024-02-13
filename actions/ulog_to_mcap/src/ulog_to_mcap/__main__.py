@@ -91,7 +91,7 @@ def process_wrapper(args):
 
 
 def process_data(
-    d,
+    ulog_object,
     schema_registry_dict,
     dataset,
     message_names_with_multi_id_list,
@@ -120,13 +120,13 @@ def process_data(
     Returns:
     - None
     """
-    topic_name = schema_name = d.name
+    topic_name = schema_name = ulog_object.name
 
     if topic_name in schema_registry_dict:
         if topic_name in message_names_with_multi_id_list:
-            topic_name += "_" + str(d.multi_id).zfill(2)
+            topic_name += "_" + str(ulog_object.multi_id).zfill(2)
 
-        message_count = len(d.data["timestamp"])
+        message_count = len(ulog_object.data["timestamp"])
         schema_checksum = schema_checksum_dict[schema_name]
 
         # Create topic record
@@ -146,16 +146,15 @@ def process_data(
         print(f"Topic created: {topic_name}")
 
         # Create Message Path Records
-        utils.create_message_path_records(topic, d.field_data)
+        utils.create_message_path_records(topic, ulog_object.field_data)
 
         # Create MCAP File
         output_path_per_topic_mcap = os.path.join(
             output_dir_path_mcap, f"{topic_name}.mcap"
         )
         print(f"MCAP file path: {output_path_per_topic_mcap}")
-
         utils.create_per_topic_mcap_from_ulog(
-            output_path_per_topic_mcap, d, schema_registry_dict
+            output_path_per_topic_mcap, ulog_object, schema_registry_dict
         )
 
         relative_file_name = output_path_per_topic_mcap.split(output_dir_temp)[1][1:]
@@ -226,6 +225,7 @@ def ingest_ulog(ulog_file_path: str, messages: List[str] = None):
 
     # This is a temporary fix for Multi Information messages with the same name
     # https://docs.px4.io/main/en/dev_log/ulog_file_format.html#m-multi-information-message
+    # Similar to Plotjuggler approach
     # TODO: handle this in a better way
     message_names_with_multi_id_list = list()
     for d in sorted(ulog.data_list, key=lambda obj: obj.name):
@@ -239,7 +239,7 @@ def ingest_ulog(ulog_file_path: str, messages: List[str] = None):
     # Prepare Arguments for Parallel Processing
     args_list = [
         (
-            d,
+            ulog_object,
             schema_registry_dict,
             dataset,
             message_names_with_multi_id_list,
@@ -250,7 +250,7 @@ def ingest_ulog(ulog_file_path: str, messages: List[str] = None):
             output_dir_path_mcap,
             output_dir_temp,
         )
-        for d in sorted(ulog.data_list, key=lambda obj: obj.name)
+        for ulog_object in sorted(ulog.data_list, key=lambda obj: obj.name)
     ]
 
     with ProcessPoolExecutor() as executor:
