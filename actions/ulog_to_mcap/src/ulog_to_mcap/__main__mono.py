@@ -6,7 +6,6 @@ import logging
 import sys
 import pathlib
 import time
-from concurrent.futures import ProcessPoolExecutor
 
 from roboto.association import (
     Association,
@@ -83,87 +82,6 @@ def setup_env():
     return org_id, input_dir, output_dir, topic_delegate, dataset
 
 
-def process_wrapper(args):
-    return process_data(*args)
-
-
-def process_data(
-    d,
-    schema_registry_dict,
-    dataset,
-    message_names_with_multi_id_list,
-    schema_checksum_dict,
-    org_id,
-    topic_association,
-    topic_delegate,
-    output_dir_path_mcap,
-    output_dir_temp,
-):
-    topic_name = schema_name = d.name
-
-    if topic_name in schema_registry_dict:
-        if topic_name in message_names_with_multi_id_list:
-            topic_name += "_" + str(d.multi_id).zfill(2)
-
-        message_count = len(d.data["timestamp"])
-        schema_checksum = schema_checksum_dict[schema_name]
-
-        # Create topic record
-        topic = topics.Topic.create(
-            request=topics.CreateTopicRequest(
-                association=topic_association,
-                org_id=org_id,
-                schema_name=schema_name,
-                schema_checksum=schema_checksum,
-                topic_name=topic_name,
-                message_count=message_count,
-                # start_time=start_time,
-                # end_time=end_time,
-            ),
-            topic_delegate=topic_delegate,
-        )
-        print(f"Topic created: {topic_name}")
-
-        # Create Message Path Records
-        utils.create_message_path_records(topic, d.field_data)
-
-        # Create MCAP File
-        output_path_per_topic_mcap = os.path.join(
-            output_dir_path_mcap, f"{topic_name}.mcap"
-        )
-        print(f"MCAP file path: {output_path_per_topic_mcap}")
-
-        utils.create_per_topic_mcap_from_ulog(
-            output_path_per_topic_mcap, d, schema_registry_dict
-        )
-
-        relative_file_name = output_path_per_topic_mcap.split(output_dir_temp)[1][
-            1:
-        ]  # Adjust slicing as needed
-
-        # Upload MCAP File
-        dataset.upload_file(
-            pathlib.Path(output_path_per_topic_mcap), relative_file_name
-        )
-
-        print(
-            f"Setting default representation for topic: {topic_name}, file_id: {dataset.get_file_info(relative_file_name).file_id}"
-        )
-
-        # Set Default Topic Representation
-        topic.set_default_representation(
-            request=topics.SetDefaultRepresentationRequest(
-                association=topics.Association(
-                    association_type=topics.AssociationType.File,
-                    association_id=dataset.get_file_info(relative_file_name).file_id,
-                ),
-                org_id=org_id,
-                storage_format=topics.RepresentationStorageFormat.MCAP,
-                version=1,
-            )
-        )
-
-
 def ingest_ulog(ulog_file_path: str, messages: List[str] = None):
     """
     For each message in the .ulg file, a .mcap file is created.
@@ -184,9 +102,7 @@ def ingest_ulog(ulog_file_path: str, messages: List[str] = None):
 
     # Setup Environment
     org_id, input_dir, output_dir, topic_delegate, dataset = setup_env()
-    output_dir_path_mcap, output_dir_temp = utils.setup_output_folder_structure(
-        ulog_file_path, input_dir
-    )
+    output_dir_path_mcap, output_dir_temp = utils.setup_output_folder_structure(ulog_file_path, input_dir)
 
     schema_registry_dict = {}
     schema_checksum_dict = {}
@@ -200,7 +116,8 @@ def ingest_ulog(ulog_file_path: str, messages: List[str] = None):
     file_record = dataset.get_file_info(dataset_relative_path)
 
     topic_association = Association(
-        association_id=file_record.file_id, association_type=AssociationType.File
+        association_id=file_record.file_id,
+        association_type=AssociationType.File
     )
 
     start_time = time.time()
@@ -217,25 +134,64 @@ def ingest_ulog(ulog_file_path: str, messages: List[str] = None):
 
     print(f"message_names_with_multi_id_list: {message_names_with_multi_id_list}")
 
-    # Prepare Arguments for Parallel Processing
-    args_list = [
-        (
-            d,
-            schema_registry_dict,
-            dataset,
-            message_names_with_multi_id_list,
-            schema_checksum_dict,
-            org_id,
-            topic_association,
-            topic_delegate,
-            output_dir_path_mcap,
-            output_dir_temp,
-        )
-        for d in sorted(ulog.data_list, key=lambda obj: obj.name)
-    ]
+    for d in sorted(ulog.data_list, key=lambda obj: obj.name):
+        topic_name = schema_name = d.name
 
-    with ProcessPoolExecutor() as executor:
-        executor.map(process_wrapper, args_list)
+        if topic_name in schema_registry_dict.keys():
+            if topic_name in message_names_with_multi_id_list:
+                topic_name = topic_name + "_" + str(d.multi_id).zfill(2)
+
+            message_count = len(d.data["timestamp"])
+            schema_checksum = schema_checksum_dict[schema_name]
+
+            # Create Topic Record
+            topic = topics.Topic.create(
+                request=topics.CreateTopicRequest(
+                    association=topic_association,
+                    org_id=org_id,
+                    schema_name=schema_name,
+                    schema_checksum=schema_checksum,
+                    topic_name=topic_name,
+                    message_count=message_count,
+                    # start_time=start_time,
+                    # end_time=end_time,
+                ),
+                topic_delegate=topic_delegate,
+            )
+            print(f"Topic created: {topic_name}")
+
+            # Create Message Path Records
+            utils.create_message_path_records(topic, d.field_data)
+
+            # Create MCAP File
+            output_path_per_topic_mcap = os.path.join(output_dir_path_mcap, f"{topic_name}.mcap")
+            print(f"MCAP file path: {output_path_per_topic_mcap}")
+
+            utils.create_per_topic_mcap_from_ulog(output_path_per_topic_mcap,
+                                                  d,
+                                                  schema_registry_dict)
+
+            relative_file_name = output_path_per_topic_mcap.split(output_dir_temp)[1]
+            relative_file_name = relative_file_name[1:]
+
+            # Upload MCAP File
+            dataset.upload_file(pathlib.Path(output_path_per_topic_mcap), relative_file_name)
+
+            print(f"Setting default representation for topic: {topic_name}, "
+                  f"file_id: {dataset.get_file_info(relative_file_name).file_id}")
+
+            # Set Default Topic Representation
+            topic.set_default_representation(
+                request=topics.SetDefaultRepresentationRequest(
+                    association=Association(
+                        association_type=AssociationType.File,
+                        association_id=dataset.get_file_info(relative_file_name).file_id,
+                    ),
+                    org_id=org_id,
+                    storage_format=topics.RepresentationStorageFormat.MCAP,
+                    version=1,
+                )
+            )
 
     end_time = time.time()
     elapsed_time = end_time - start_time

@@ -1,8 +1,7 @@
 import hashlib
 import json
 import os
-import pathlib
-import glob
+import tempfile
 from mcap.writer import Writer
 from typing import Dict, List, Tuple, Any
 from roboto.domain import topics
@@ -39,68 +38,6 @@ TYPE_MAPPING_CANONICAL = {
     "bool": topics.CanonicalDataType.Boolean,
     "char": topics.CanonicalDataType.String,
 }
-
-
-def create_per_topic_mcap_from_ulog(
-    ulog: Any, output_folder_path: str, dataset: Any
-) -> Tuple[Dict[str, Any], Dict[str, str]]:
-    """
-    Creates per-topic MCAP files from a ULog object.
-
-    Args:
-    - ulog: ULog object containing log data.
-    - output_folder_path: Path to the folder where the output MCAP files will be stored.
-
-    Returns:
-    - A tuple containing a schema registry dictionary and a schema checksum dictionary.
-    """
-    schema_registry_dict = {}
-    schema_checksum_dict = {}
-    topic_name_to_file_id_dict = {}
-
-    for key in ulog.message_formats:
-        json_schema_topic = create_json_schema(ulog.message_formats[key].fields)
-        schema_registry_dict[key] = json_schema_topic
-        schema_checksum_dict[key] = compute_checksum(json_schema_topic)
-
-    for d in sorted(ulog.data_list, key=lambda obj: obj.name):
-        file_name = f"{d.name}.mcap"
-        output_path_per_topic_mcap = os.path.join(output_folder_path, file_name)
-        print(output_path_per_topic_mcap)
-        with open(output_path_per_topic_mcap, "wb") as stream:
-            writer = Writer(stream)
-            writer.start()
-
-            schema_id = writer.register_schema(
-                name=d.name,
-                encoding="jsonschema",
-                data=json.dumps(schema_registry_dict[d.name]).encode(),
-            )
-
-            channel_id = writer.register_channel(
-                schema_id=schema_id,
-                topic=d.name,
-                message_encoding="json",
-            )
-
-            for i in range(len(d.data["timestamp"])):
-                values = list()
-                for f in d.field_data:
-                    values.append((f.field_name, f.type_str, d.data[f.field_name][i]))
-                json_msg_instance = parse_values_to_json(values)
-                writer.add_message(
-                    channel_id=channel_id,
-                    log_time=int(d.data["timestamp"][i] * 1000),
-                    data=json.dumps(json_msg_instance).encode("utf-8"),
-                    publish_time=int(d.data["timestamp"][i] * 1000),
-                )
-
-            writer.finish()
-
-            dataset.upload_file(pathlib.Path(output_path_per_topic_mcap), file_name)
-            topic_name_to_file_id_dict[d.name] = dataset.get_file_info(file_name).file_id
-
-    return topic_name_to_file_id_dict
 
 
 def compute_checksum(json_schema: Dict[str, Any]) -> str:
@@ -215,23 +152,117 @@ def convert_value(field_type: str, value: Any) -> Any:
         return value
 
 
-def upload_mcap_files_to_dataset(directory: str, dataset) -> None:
+def create_message_path_records(topic: Any, field_data: Any) -> None:
     """
-    Uploads all MCAP files in a given directory to a dataset.
+    Creates message path records for a given topic.
 
     Args:
-    - directory: The directory containing the MCAP files.
-    - dataset: The dataset to which the MCAP files will be uploaded.
+    - topic: The topic object to which the message paths will be added.
+    - field_data: A list of field data objects containing the message definition.
+    """
+    array_list = list()
+    for field in field_data:
+        # For now only allow these types
+        if field.type_str in TYPE_MAPPING_CANONICAL.keys():
+            if "[" in field.field_name:
+                array_name = field.field_name.split("[")[0]
+                if array_name not in array_list:
+                    print(
+                        f"Adding array: {array_name}, type: {field.type_str}, canonical: {topics.CanonicalDataType.Array}"
+                    )
+                    topic.add_message_path(
+                        request=topics.AddMessagePathRequest(
+                            message_path=array_name,
+                            data_type="array",  # TBD
+                            canonical_data_type=topics.CanonicalDataType.Array,
+                        )
+                    )
+                    array_list.append(array_name)
+            else:
+                print(
+                    f"Adding field: {field.field_name}, type: {field.type_str}, canonical: {TYPE_MAPPING_CANONICAL[field.type_str]}"
+                )
+                topic.add_message_path(
+                    request=topics.AddMessagePathRequest(
+                        message_path=field.field_name,
+                        data_type=field.type_str,
+                        canonical_data_type=TYPE_MAPPING_CANONICAL[field.type_str],
+                    )
+                )
+
+    return
+
+
+def create_per_topic_mcap_from_ulog(
+    output_path_per_topic_mcap: Any, d: str, schema_registry_dict: Dict[str, Any]
+) -> None:
+    """
+    Creates a per-topic MCAP file from a ULog object.
+
+    Args:
+    - output_path_per_topic_mcap: The path to the output MCAP file.
+    - d: The ULog object containing the data to be converted.
+    - schema_registry_dict: A dictionary containing the JSON schemas for each topic.
 
     Returns:
     - None
     """
-    mcap_files = []
-    for root, dirs, files in os.walk(directory):
-        for file in glob.glob(os.path.join(root, '*.mcap')):
-            _, file_name = os.path.split(file)
-            absolute_path = os.path.abspath(file)
-            mcap_files.append(absolute_path)
-            dataset.upload_file(pathlib.Path(absolute_path), file_name)
+    with open(output_path_per_topic_mcap, "wb") as stream:
+        writer = Writer(stream)
+        writer.start()
 
-    return mcap_files
+        schema_id = writer.register_schema(
+            name=d.name,
+            encoding="jsonschema",
+            data=json.dumps(schema_registry_dict[d.name]).encode(),
+        )
+
+        channel_id = writer.register_channel(
+            schema_id=schema_id,
+            topic=d.name,
+            message_encoding="json",
+        )
+
+        for i in range(len(d.data["timestamp"])):
+            values = list()
+            for f in d.field_data:
+                values.append((f.field_name, f.type_str, d.data[f.field_name][i]))
+            json_msg_instance = parse_values_to_json(values)
+            writer.add_message(
+                channel_id=channel_id,
+                log_time=int(d.data["timestamp"][i] * 1000),
+                data=json.dumps(json_msg_instance).encode("utf-8"),
+                publish_time=int(d.data["timestamp"][i] * 1000),
+            )
+
+        writer.finish()
+    return
+
+
+def setup_output_folder_structure(ulog_file_path: str, input_dir: str) -> Tuple[str, str]:
+    """
+    Set up the output folder structure for the .mcap files.
+
+    Args:
+    - ulog_file_path: Path to the .ulg file.
+    - input_dir: Path to the input directory.
+    """
+    relative_folder_path_of_file = os.path.split(ulog_file_path.split(input_dir)[1])[0]
+
+    ulog_file_name = os.path.split(ulog_file_path)[1]
+
+    output_folder_name_ulog = ulog_file_name.replace(".ulg", "")
+    relative_folder_path_of_file = relative_folder_path_of_file.lstrip("/")
+    temp_dir = str(tempfile.TemporaryDirectory().name)
+
+    output_folder_path = os.path.join(
+        temp_dir,
+        ".VISUALIZATION_ASSETS",
+        relative_folder_path_of_file,
+        output_folder_name_ulog,
+    )
+
+    print(f"Output folder path: {output_folder_path}")
+    os.makedirs(output_folder_path, exist_ok=True)
+
+    return output_folder_path, temp_dir
