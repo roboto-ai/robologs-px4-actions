@@ -11,4 +11,4 @@ if docker buildx version &> /dev/null; then
     build_subcommand=(buildx build --platform linux/amd64 --output type=image)
 fi
 
-docker "${build_subcommand[@]}" -f $PACKAGE_ROOT/Dockerfile -t ulog_to_mcap:latest $PACKAGE_ROOT
+docker "${build_subcommand[@]}" -f $PACKAGE_ROOT/Dockerfile -t ulog_ingestion:latest $PACKAGE_ROOT

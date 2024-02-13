@@ -19,7 +19,7 @@ fi
 
 roboto_exe="$PACKAGE_ROOT/.venv/bin/roboto"
 
-echo "Pushing ulog_to_mcap:latest to Roboto's private registry"
+echo "Pushing ulog_ingestion:latest to Roboto's private registry"
 image_push_args=(
     --suppress-upgrade-check
     images push
@@ -28,17 +28,17 @@ image_push_args=(
 if [[ -n $org_id ]]; then
     image_push_args+=(--org $org_id)
 fi
-image_push_args+=(ulog_to_mcap:latest)
+image_push_args+=(ulog_ingestion:latest)
 image_push_ret_code=0
 image_uri=$($roboto_exe "${image_push_args[@]}")
 image_push_ret_code=$?
 
 if [ $image_push_ret_code -ne 0 ]; then
-    echo "Failed to push ulog_to_mcap:latest to Roboto's private registry"
+    echo "Failed to push ulog_ingestion:latest to Roboto's private registry"
     exit 1
 fi
 
-echo "Creating ulog_to_mcap action"
+echo "Creating ulog_ingestion action"
 create_args=(
   --from-file $PACKAGE_ROOT/action.json
   --image $image_uri
