@@ -169,9 +169,6 @@ def create_message_path_records(topic: Any, field_data: Any) -> None:
                 array_field_type = f"{field.type_str}[]"
 
                 if array_name not in array_list:
-                    print(
-                        f"Adding array: {array_name}, type: {array_field_type}, canonical: {topics.CanonicalDataType.Array}"
-                    )
                     topic.add_message_path(
                         request=topics.AddMessagePathRequest(
                             message_path=array_name,
@@ -181,7 +178,7 @@ def create_message_path_records(topic: Any, field_data: Any) -> None:
                     )
 
                     print(
-                        f"Adding sub-field for array: {sub_array_name}, type: {field.type_str}, canonical: {TYPE_MAPPING_CANONICAL[field.type_str]}"
+                        f"Adding array: {array_name}, type: {array_field_type}, canonical: {topics.CanonicalDataType.Array}"
                     )
 
                     # Add another message path for the array elements
@@ -192,6 +189,10 @@ def create_message_path_records(topic: Any, field_data: Any) -> None:
                             data_type=field.type_str,  # TBD
                             canonical_data_type=TYPE_MAPPING_CANONICAL[field.type_str],
                         )
+                    )
+
+                    print(
+                        f"Adding sub-field for array: {sub_array_name}, type: {field.type_str}, canonical: {TYPE_MAPPING_CANONICAL[field.type_str]}"
                     )
 
                     array_list.append(array_name)
@@ -211,7 +212,7 @@ def create_message_path_records(topic: Any, field_data: Any) -> None:
 
 
 def create_per_topic_mcap_from_ulog(
-    output_path_per_topic_mcap: Any, d: str, schema_registry_dict: Dict[str, Any]
+    output_path_per_topic_mcap: Any, d: str, json_schema_topic: Any
 ) -> None:
     """
     Creates a per-topic MCAP file from a ULog object.
@@ -219,11 +220,12 @@ def create_per_topic_mcap_from_ulog(
     Args:
     - output_path_per_topic_mcap: The path to the output MCAP file.
     - d: The ULog object containing the data to be converted.
-    - schema_registry_dict: A dictionary containing the JSON schemas for each topic.
+    - json_schema_topic: The json schema dict for the topic.
 
     Returns:
     - None
     """
+
     with open(output_path_per_topic_mcap, "wb") as stream:
         writer = Writer(stream)
         writer.start()
@@ -231,7 +233,7 @@ def create_per_topic_mcap_from_ulog(
         schema_id = writer.register_schema(
             name=d.name,
             encoding="jsonschema",
-            data=json.dumps(schema_registry_dict[d.name]).encode(),
+            data=json.dumps(json_schema_topic).encode(),
         )
 
         channel_id = writer.register_channel(
@@ -245,11 +247,14 @@ def create_per_topic_mcap_from_ulog(
             for f in d.field_data:
                 values.append((f.field_name, f.type_str, d.data[f.field_name][i]))
             json_msg_instance = parse_values_to_json(values)
+
+            timestamp_ns = int(d.data["timestamp"][i] * 1000)
+
             writer.add_message(
                 channel_id=channel_id,
-                log_time=int(d.data["timestamp"][i] * 1000),
+                log_time=timestamp_ns,
                 data=json.dumps(json_msg_instance).encode("utf-8"),
-                publish_time=int(d.data["timestamp"][i] * 1000),
+                publish_time=timestamp_ns,
             )
 
         writer.finish()
@@ -285,3 +290,26 @@ def setup_output_folder_structure(
     os.makedirs(output_folder_path, exist_ok=True)
 
     return output_folder_path, temp_dir
+
+
+def is_valid_ulog(ulog_file_path: str) -> bool:
+    """
+    Check if the given file is a valid .ulg file.
+
+    Args:
+    - ulog_file_path: Path to the .ulg file.
+
+    Returns:
+    - True if the file is a valid .ulg file, False otherwise.
+    """
+
+    header_bytes = b'\x55\x4c\x6f\x67\x01\x12\x35'
+    file_handle = open(ulog_file_path, "rb")
+
+    header_data = file_handle.read(16)
+    if len(header_data) != 16:
+        raise TypeError("Invalid ULog file format (Header too short)")
+    if header_data[:7] != header_bytes:
+        raise TypeError("Invalid ULog file format (Failed to parse header)")
+
+    return True

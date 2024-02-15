@@ -6,7 +6,7 @@ import logging
 import sys
 import pathlib
 import time
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 from roboto.association import (
     Association,
@@ -83,22 +83,11 @@ def setup_env():
     return org_id, input_dir, output_dir, topic_delegate, dataset
 
 
-def process_wrapper(args):
-    """
-    Wrapper function for parallel processing.
-    """
-    return process_data(*args)
-
-
 def process_data(
-    ulog_object,
-    schema_registry_dict,
-    dataset,
+    ulog_file_path,
+    ulog_data_object,
+    ulog_message_format_object,
     message_names_with_multi_id_list,
-    schema_checksum_dict,
-    org_id,
-    topic_association,
-    topic_delegate,
     output_dir_path_mcap,
     output_dir_temp,
 ):
@@ -106,84 +95,96 @@ def process_data(
     Process the data from a ULog file.
 
     Args:
-    - d: The ULog data to process.
-    - schema_registry_dict: A dictionary containing the JSON schemas for each topic.
-    - dataset: The dataset to which to upload the MCAP files.
+    - ulog_file_path: Path to the .ulg file.
+    - ulog_data_object: The ULog data object to process.
+    - ulog_message_format_object: The ULog message object to process.
     - message_names_with_multi_id_list: A list of message names with multi IDs.
-    - schema_checksum_dict: A dictionary containing the checksums for each schema.
-    - org_id: The organization ID.
-    - topic_association: The association for the topic.
-    - topic_delegate: The topic delegate.
     - output_dir_path_mcap: The path to the output directory for the MCAP files.
     - output_dir_temp: The path to the temporary output directory.
 
     Returns:
     - None
     """
-    topic_name = schema_name = ulog_object.name
+    org_id, input_dir, output_dir, topic_delegate, dataset = setup_env()
 
-    if topic_name in schema_registry_dict:
-        if topic_name in message_names_with_multi_id_list:
-            topic_name += "_" + str(ulog_object.multi_id).zfill(2)
+    dataset_relative_path = pathlib.Path(ulog_file_path).relative_to(input_dir)
+    file_record = dataset.get_file_info(dataset_relative_path)
 
-        message_count = len(ulog_object.data["timestamp"])
-        schema_checksum = schema_checksum_dict[schema_name]
+    topic_association = Association(
+        association_id=file_record.file_id,
+        association_type=AssociationType.File
+    )
 
-        # Create topic record
-        topic = topics.Topic.create(
-            request=topics.CreateTopicRequest(
-                association=topic_association,
-                org_id=org_id,
-                schema_name=schema_name,
-                schema_checksum=schema_checksum,
-                topic_name=topic_name,
-                message_count=message_count,
-                # start_time=start_time,
-                # end_time=end_time,
+    topic_name = schema_name = topic_name_roboto = ulog_data_object.name
+
+    if topic_name in message_names_with_multi_id_list:
+        topic_name_roboto += "_" + str(ulog_data_object.multi_id).zfill(2)
+
+    # See link below for more context about how pyulog organizes data
+    # https://github.com/PX4/pyulog/blob/7819181f2c9cb0ecfbcd73d46571b0afa44f0d97/pyulog/core.py#L499-L503
+    message_count = len(ulog_data_object.data["timestamp"])
+
+    json_schema_topic = utils.create_json_schema(ulog_message_format_object[topic_name].fields)
+    schema_checksum = utils.compute_checksum(json_schema_topic)
+
+    # Create Topic Record
+    start_time_ns = min(ulog_data_object.data["timestamp"]) * 1000
+    end_time_ns = max(ulog_data_object.data["timestamp"]) * 1000
+
+    topic = topics.Topic.create(
+        request=topics.CreateTopicRequest(
+            association=topic_association,
+            org_id=org_id,
+            schema_name=schema_name,
+            schema_checksum=schema_checksum,
+            topic_name=topic_name_roboto,
+            message_count=message_count,
+            start_time=start_time_ns,
+            end_time=end_time_ns,
+        ),
+        topic_delegate=topic_delegate,
+    )
+    print(f"Topic created: {topic_name_roboto}")
+
+    # Create Message Path Records
+    utils.create_message_path_records(topic, ulog_data_object.field_data)
+
+    # Create MCAP File
+    output_path_per_topic_mcap = os.path.join(
+        output_dir_path_mcap, f"{topic_name_roboto}.mcap"
+    )
+    print(f"MCAP file path: {output_path_per_topic_mcap}")
+    utils.create_per_topic_mcap_from_ulog(
+        output_path_per_topic_mcap, ulog_data_object, json_schema_topic
+    )
+
+    relative_file_name = output_path_per_topic_mcap.split(output_dir_temp)[1][1:]
+
+    # Upload MCAP File
+    dataset.upload_file(
+        pathlib.Path(output_path_per_topic_mcap), relative_file_name
+    )
+
+    print(
+        f"Setting default representation for topic: {topic_name_roboto}, file_id: {dataset.get_file_info(relative_file_name).file_id}"
+    )
+
+    # Set Default Topic Representation
+    topic.set_default_representation(
+        request=topics.SetDefaultRepresentationRequest(
+            association=Association(
+                association_type=AssociationType.File,
+                association_id=dataset.get_file_info(relative_file_name).file_id,
             ),
-            topic_delegate=topic_delegate,
+            org_id=org_id,
+            storage_format=topics.RepresentationStorageFormat.MCAP,
+            version=1,
         )
-        print(f"Topic created: {topic_name}")
-
-        # Create Message Path Records
-        utils.create_message_path_records(topic, ulog_object.field_data)
-
-        # Create MCAP File
-        output_path_per_topic_mcap = os.path.join(
-            output_dir_path_mcap, f"{topic_name}.mcap"
-        )
-        print(f"MCAP file path: {output_path_per_topic_mcap}")
-        utils.create_per_topic_mcap_from_ulog(
-            output_path_per_topic_mcap, ulog_object, schema_registry_dict
-        )
-
-        relative_file_name = output_path_per_topic_mcap.split(output_dir_temp)[1][1:]
-
-        # Upload MCAP File
-        dataset.upload_file(
-            pathlib.Path(output_path_per_topic_mcap), relative_file_name
-        )
-
-        print(
-            f"Setting default representation for topic: {topic_name}, file_id: {dataset.get_file_info(relative_file_name).file_id}"
-        )
-
-        # Set Default Topic Representation
-        topic.set_default_representation(
-            request=topics.SetDefaultRepresentationRequest(
-                association=topics.Association(
-                    association_type=topics.AssociationType.File,
-                    association_id=dataset.get_file_info(relative_file_name).file_id,
-                ),
-                org_id=org_id,
-                storage_format=topics.RepresentationStorageFormat.MCAP,
-                version=1,
-            )
-        )
-        return
+    )
+    return
 
 
-def ingest_ulog(ulog_file_path: str, messages: List[str] = None):
+def ingest_ulog(ulog_file_path: str, topics: List[str] = None):
     """
 
     This function creates topic entries, message path records, and MCAP files from a ULog file.
@@ -195,32 +196,16 @@ def ingest_ulog(ulog_file_path: str, messages: List[str] = None):
     Returns:
     - None
     """
-    msg_filter = messages.split(",") if messages else None
+    msg_filter = topics.split(",") if topics else None
     print(ulog_file_path)
 
     ulog = ULog(ulog_file_path, msg_filter, True)
 
-    # Setup Environment
-    org_id, input_dir, output_dir, topic_delegate, dataset = setup_env()
+    _, input_dir, _, _, _ = setup_env()
+
     output_dir_path_mcap, output_dir_temp = utils.setup_output_folder_structure(
         ulog_file_path, input_dir
     )
-
-    schema_registry_dict = {}
-    schema_checksum_dict = {}
-
-    for key in ulog.message_formats:
-        json_schema_topic = utils.create_json_schema(ulog.message_formats[key].fields)
-        schema_registry_dict[key] = json_schema_topic
-        schema_checksum_dict[key] = utils.compute_checksum(json_schema_topic)
-
-    dataset_relative_path = pathlib.Path(ulog_file_path).relative_to(input_dir)
-    file_record = dataset.get_file_info(dataset_relative_path)
-
-    topic_association = Association(
-        association_id=file_record.file_id, association_type=AssociationType.File
-    )
-
     start_time = time.time()
 
     # This is a temporary fix for Multi Information messages with the same name
@@ -229,6 +214,7 @@ def ingest_ulog(ulog_file_path: str, messages: List[str] = None):
     # TODO: handle this in a better way
     message_names_with_multi_id_list = list()
     for d in sorted(ulog.data_list, key=lambda obj: obj.name):
+        print(f"topic name: {d.name}")
         if d.multi_id > 0:
             message_names_with_multi_id_list.append(d.name)
 
@@ -239,22 +225,26 @@ def ingest_ulog(ulog_file_path: str, messages: List[str] = None):
     # Prepare Arguments for Parallel Processing
     args_list = [
         (
-            ulog_object,
-            schema_registry_dict,
-            dataset,
+            ulog_file_path,
+            ulog_data_object,
+            ulog.message_formats,
             message_names_with_multi_id_list,
-            schema_checksum_dict,
-            org_id,
-            topic_association,
-            topic_delegate,
             output_dir_path_mcap,
             output_dir_temp,
         )
-        for ulog_object in sorted(ulog.data_list, key=lambda obj: obj.name)
+        for ulog_data_object in sorted(ulog.data_list, key=lambda obj: obj.name)
     ]
 
     with ProcessPoolExecutor() as executor:
-        executor.map(process_wrapper, args_list)
+        # Submit all tasks and collect Future objects
+        futures = [executor.submit(process_data, *args) for args in args_list]
+
+        for future in as_completed(futures):
+            try:
+                result = future.result()
+                print("Task completed successfully", result)
+            except Exception as exc:
+                print(f"Task generated an exception: {exc}")
 
     end_time = time.time()
     elapsed_time = end_time - start_time
@@ -283,12 +273,12 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "-m",
-    "--messages",
-    dest="messages",
+    "-t",
+    "--topic-names",
+    dest="topic_names",
     type=str,
     required=False,
-    help="List of messages to process, separated by commas",
+    help="List of topic names to process, separated by commas",
     default=os.environ.get("ROBOTO_PARAM_MESSAGES", None),
 )
 
@@ -296,9 +286,10 @@ args = parser.parse_args()
 
 for root, dirs, f in os.walk(args.input_dir):
     for file in f:
-        if file.endswith(".ulg"):
-            full_path = os.path.join(root, file)
+        full_path = os.path.join(root, file)
+        if utils.is_valid_ulog(full_path):
+
             ingest_ulog(
                 ulog_file_path=full_path,
-                messages=args.messages,
+                topics=args.topic_names,
             )

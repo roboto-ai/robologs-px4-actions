@@ -38,3 +38,11 @@ def test_setup_output_folder_structure():
     assert output_folder_path == f"{temp_dir}/.VISUALIZATION_ASSETS/abc/test"
     assert os.path.exists(output_folder_path)
     shutil.rmtree(output_folder_path)
+
+
+def test_is_valid_ulog():
+
+    ulog_file_path = "./tests/test.ulg"
+    is_valid = utils.is_valid_ulog(ulog_file_path)
+    assert is_valid is True
+    
