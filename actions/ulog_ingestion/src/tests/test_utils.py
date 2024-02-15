@@ -45,4 +45,3 @@ def test_is_valid_ulog():
     ulog_file_path = "./tests/test.ulg"
     is_valid = utils.is_valid_ulog(ulog_file_path)
     assert is_valid is True
-    

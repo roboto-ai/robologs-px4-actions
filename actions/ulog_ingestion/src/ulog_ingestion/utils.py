@@ -163,50 +163,59 @@ def create_message_path_records(topic: Any, field_data: Any) -> None:
     array_list = list()
     for field in field_data:
         # For now only allow these types. TODO: Add support for nested types
-        if field.type_str in TYPE_MAPPING_CANONICAL.keys():
-            if "[" in field.field_name:
-                array_name = field.field_name.split("[")[0]
-                array_field_type = f"{field.type_str}[]"
+        if "[" in field.field_name:
+            array_name = field.field_name.split("[")[0]
+            array_field_type = f"{field.type_str}[]"
 
-                if array_name not in array_list:
-                    topic.add_message_path(
-                        request=topics.AddMessagePathRequest(
-                            message_path=array_name,
-                            data_type=array_field_type,  # TBD
-                            canonical_data_type=topics.CanonicalDataType.Array,
-                        )
-                    )
-
-                    print(
-                        f"Adding array: {array_name}, type: {array_field_type}, canonical: {topics.CanonicalDataType.Array}"
-                    )
-
-                    # Add another message path for the array elements
-                    sub_array_name = f"{array_name}.[*]"
-                    topic.add_message_path(
-                        request=topics.AddMessagePathRequest(
-                            message_path=sub_array_name,
-                            data_type=field.type_str,  # TBD
-                            canonical_data_type=TYPE_MAPPING_CANONICAL[field.type_str],
-                        )
-                    )
-
-                    print(
-                        f"Adding sub-field for array: {sub_array_name}, type: {field.type_str}, canonical: {TYPE_MAPPING_CANONICAL[field.type_str]}"
-                    )
-
-                    array_list.append(array_name)
-            else:
-                print(
-                    f"Adding field: {field.field_name}, type: {field.type_str}, canonical: {TYPE_MAPPING_CANONICAL[field.type_str]}"
-                )
+            if array_name not in array_list:
                 topic.add_message_path(
                     request=topics.AddMessagePathRequest(
-                        message_path=field.field_name,
-                        data_type=field.type_str,
-                        canonical_data_type=TYPE_MAPPING_CANONICAL[field.type_str],
+                        message_path=array_name,
+                        data_type=array_field_type,  # TBD
+                        canonical_data_type=topics.CanonicalDataType.Array,
                     )
                 )
+
+                print(
+                    f"Adding array: {array_name}, type: {array_field_type}, canonical: {topics.CanonicalDataType.Array}"
+                )
+
+                # Add another message path for the array elements
+                sub_array_name = f"{array_name}.[*]"
+
+                canonical_data_type = TYPE_MAPPING_CANONICAL[field.type_str]
+                if field.type_str not in TYPE_MAPPING_CANONICAL.keys():
+                    canonical_data_type = topics.CanonicalDataType.Unknown
+
+                topic.add_message_path(
+                    request=topics.AddMessagePathRequest(
+                        message_path=sub_array_name,
+                        data_type=field.type_str,  # TBD
+                        canonical_data_type=canonical_data_type,
+                    )
+                )
+
+                print(
+                    f"Adding sub-field for array: {sub_array_name}, type: {field.type_str}, canonical: {TYPE_MAPPING_CANONICAL[field.type_str]}"
+                )
+
+                array_list.append(array_name)
+        else:
+            print(
+                f"Adding field: {field.field_name}, type: {field.type_str}, canonical: {TYPE_MAPPING_CANONICAL[field.type_str]}"
+            )
+
+            canonical_data_type = TYPE_MAPPING_CANONICAL[field.type_str]
+            if field.type_str not in TYPE_MAPPING_CANONICAL.keys():
+                canonical_data_type = topics.CanonicalDataType.Unknown
+
+            topic.add_message_path(
+                request=topics.AddMessagePathRequest(
+                    message_path=field.field_name,
+                    data_type=field.type_str,
+                    canonical_data_type=canonical_data_type,
+                )
+            )
 
     return
 
