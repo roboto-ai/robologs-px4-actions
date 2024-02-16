@@ -165,8 +165,10 @@ def process_data(
         pathlib.Path(output_path_per_topic_mcap), relative_file_name
     )
 
+    file_id = dataset.get_file_info(relative_file_name).file_id
+
     print(
-        f"Setting default representation for topic: {topic_name_roboto}, file_id: {dataset.get_file_info(relative_file_name).file_id}"
+        f"Setting default representation for topic: {topic_name_roboto}, file_id: {file_id}"
     )
 
     # Set Default Topic Representation
@@ -174,7 +176,7 @@ def process_data(
         request=topics.SetDefaultRepresentationRequest(
             association=Association(
                 association_type=AssociationType.File,
-                association_id=dataset.get_file_info(relative_file_name).file_id,
+                association_id=file_id,
             ),
             org_id=org_id,
             storage_format=topics.RepresentationStorageFormat.MCAP,
@@ -241,14 +243,13 @@ def ingest_ulog(ulog_file_path: str, topics: List[str] = None):
 
         for future in as_completed(futures):
             try:
-                result = future.result()
-                print("Task completed successfully", result)
+                print("Task completed successfully")
             except Exception as exc:
                 print(f"Task generated an exception: {exc}")
 
     end_time = time.time()
     elapsed_time = end_time - start_time
-    print(f"The topic create function took {elapsed_time} seconds to run.")
+    print(f"The topic create function took {elapsed_time} seconds to process {ulog_file_path}.")
 
 
 parser = argparse.ArgumentParser()
@@ -279,7 +280,7 @@ parser.add_argument(
     type=str,
     required=False,
     help="List of topic names to process, separated by commas",
-    default=os.environ.get("ROBOTO_PARAM_MESSAGES", None),
+    default=os.environ.get("ROBOTO_PARAM_TOPICS", None),
 )
 
 args = parser.parse_args()

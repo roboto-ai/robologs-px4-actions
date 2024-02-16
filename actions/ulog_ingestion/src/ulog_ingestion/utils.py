@@ -163,6 +163,12 @@ def create_message_path_records(topic: Any, field_data: Any) -> None:
     array_list = list()
     for field in field_data:
         # For now only allow these types. TODO: Add support for nested types
+
+        if field.type_str not in TYPE_MAPPING_CANONICAL.keys():
+            canonical_data_type = topics.CanonicalDataType.Unknown
+        else:
+            canonical_data_type = TYPE_MAPPING_CANONICAL[field.type_str]
+
         if "[" in field.field_name:
             array_name = field.field_name.split("[")[0]
             array_field_type = f"{field.type_str}[]"
@@ -182,11 +188,6 @@ def create_message_path_records(topic: Any, field_data: Any) -> None:
 
                 # Add another message path for the array elements
                 sub_array_name = f"{array_name}.[*]"
-
-                canonical_data_type = TYPE_MAPPING_CANONICAL[field.type_str]
-                if field.type_str not in TYPE_MAPPING_CANONICAL.keys():
-                    canonical_data_type = topics.CanonicalDataType.Unknown
-
                 topic.add_message_path(
                     request=topics.AddMessagePathRequest(
                         message_path=sub_array_name,
@@ -196,18 +197,11 @@ def create_message_path_records(topic: Any, field_data: Any) -> None:
                 )
 
                 print(
-                    f"Adding sub-field for array: {sub_array_name}, type: {field.type_str}, canonical: {TYPE_MAPPING_CANONICAL[field.type_str]}"
+                    f"Adding sub-field for array: {sub_array_name}, type: {field.type_str}, canonical: {canonical_data_type}"
                 )
 
                 array_list.append(array_name)
         else:
-            print(
-                f"Adding field: {field.field_name}, type: {field.type_str}, canonical: {TYPE_MAPPING_CANONICAL[field.type_str]}"
-            )
-
-            canonical_data_type = TYPE_MAPPING_CANONICAL[field.type_str]
-            if field.type_str not in TYPE_MAPPING_CANONICAL.keys():
-                canonical_data_type = topics.CanonicalDataType.Unknown
 
             topic.add_message_path(
                 request=topics.AddMessagePathRequest(
@@ -215,6 +209,10 @@ def create_message_path_records(topic: Any, field_data: Any) -> None:
                     data_type=field.type_str,
                     canonical_data_type=canonical_data_type,
                 )
+            )
+
+            print(
+                f"Adding field: {field.field_name}, type: {field.type_str}, canonical: {canonical_data_type}"
             )
 
     return
@@ -313,12 +311,13 @@ def is_valid_ulog(ulog_file_path: str) -> bool:
     """
 
     header_bytes = b'\x55\x4c\x6f\x67\x01\x12\x35'
-    file_handle = open(ulog_file_path, "rb")
 
-    header_data = file_handle.read(16)
-    if len(header_data) != 16:
-        raise TypeError("Invalid ULog file format (Header too short)")
-    if header_data[:7] != header_bytes:
-        raise TypeError("Invalid ULog file format (Failed to parse header)")
+    with open(ulog_file_path, "rb") as file_handle:
 
-    return True
+        header_data = file_handle.read(16)
+        if len(header_data) != 16:
+            raise TypeError("Invalid ULog file format (Header too short)")
+        if header_data[:7] != header_bytes:
+            raise TypeError("Invalid ULog file format (Failed to parse header)")
+
+        return True

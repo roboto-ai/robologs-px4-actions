@@ -1,6 +1,13 @@
 {
     "name": "ulog_ingestion",
     "description": "This Action processes ULog files for visualization within the Roboto platform.",
+    "parameters": [
+        {
+            "name": "TOPICS",
+            "required": false,
+            "description": "Comma-separated list of topics to extract. For example: battery_status,actuator_armed"
+        }
+    ],
     "compute_requirements": {
         "vCPU": 4096,
         "memory": 8192,
