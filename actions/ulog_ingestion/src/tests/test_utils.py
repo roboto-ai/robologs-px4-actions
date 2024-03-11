@@ -45,3 +45,15 @@ def test_is_valid_ulog():
     ulog_file_path = "./tests/test.ulg"
     is_valid = utils.is_valid_ulog(ulog_file_path)
     assert is_valid is True
+
+
+# def test_add_metadata():
+#     ulog_file_path = "./tests/test.ulg"
+#     #topics = ["vehicle_acceleration"]
+#
+#     utils.add_metadata(ulog_file_path, topics=None)
+
+    # assert os.path.exists(ulog_file_path)
+    # assert os.path.exists(f"{ulog_file_path}.metadata.json")
+    # os.remove(f"{ulog_file_path}.metadata.json")
+    # assert not os.path.exists(f"{ulog_file_path}.metadata.json")

@@ -1,10 +1,15 @@
 import hashlib
-import json
+from roboto.env import RobotoEnvKey
+import pathlib
 import os
 import tempfile
 from mcap.writer import Writer
 from typing import Dict, List, Tuple, Any
 from roboto.domain import topics
+from pyulog.core import ULog
+import base64
+import json
+
 
 # Mapping from message definition types to JSON schema types
 TYPE_MAPPING = {
@@ -321,3 +326,43 @@ def is_valid_ulog(ulog_file_path: str) -> bool:
             raise TypeError("Invalid ULog file format (Failed to parse header)")
 
         return True
+
+
+# Helper function. Will be deleted.
+def generate_config(file_id, relative_path):
+    viz_config = {
+        "version": "v1",
+        "files": [{"fileId": file_id, "relativePath": relative_path}],
+    }
+    return base64.urlsafe_b64encode(json.dumps(viz_config).encode("utf-8")).decode(
+        "utf-8"
+    )
+
+
+def add_metadata_to_file(ulog_file_path: str, topics: List[str] = None):
+
+    msg_filter = topics.split(",") if topics else None
+    ulog = ULog(ulog_file_path, msg_filter, True)
+
+    input_dir = os.environ[f"{RobotoEnvKey.InputDir.value}"]
+    relative_file_name = ulog_file_path.split(input_dir)[1][1:]
+
+    file_metadata_changeset_file_path = os.environ[f"{RobotoEnvKey.FileMetadataChangesetFile.value}"]
+    file_metadata_changeset_file = pathlib.Path(file_metadata_changeset_file_path)
+
+    json_line = json.dumps(
+        {
+            "relative_path": relative_file_name,
+            "update": {
+                "metadata_changeset": {
+                    "put_fields": ulog.msg_info_dict,
+                },
+                "description": "",
+            },
+        }
+    )
+
+    with file_metadata_changeset_file.open('a') as file:
+        if file.tell() > 0:
+            file.write('\n')
+        file.write(json_line)
