@@ -2,9 +2,11 @@ import hashlib
 import json
 import os
 import tempfile
+import math
 from mcap.writer import Writer
 from typing import Dict, List, Tuple, Any
 from roboto.domain import topics
+import base64
 
 # Mapping from message definition types to JSON schema types
 TYPE_MAPPING = {
@@ -116,6 +118,7 @@ def parse_values_to_json(values: List[Tuple[str, str, Any]]) -> Dict[str, Any]:
     array_values = {}
 
     for field_name, field_type, field_value in values:
+
         if "[" in field_name:
             array_name = field_name.split("[")[0]
             array_values.setdefault(array_name, []).append(
@@ -139,6 +142,9 @@ def convert_value(field_type: str, value: Any) -> Any:
     Returns:
     - The converted value in its appropriate JSON type.
     """
+    if math.isnan(value):
+        return None
+
     json_type = TYPE_MAPPING.get(field_type, "string")
     if json_type == "integer":
         return int(value)
@@ -214,8 +220,17 @@ def create_message_path_records(topic: Any, field_data: Any) -> None:
             print(
                 f"Adding field: {field.field_name}, type: {field.type_str}, canonical: {canonical_data_type}"
             )
-
     return
+
+
+def generate_config(file_id, relative_path):
+    viz_config = {
+        "version": "v1",
+        "files": [{"fileId": file_id, "relativePath": relative_path}],
+    }
+    return base64.urlsafe_b64encode(json.dumps(viz_config).encode("utf-8")).decode(
+        "utf-8"
+    )
 
 
 def create_per_topic_mcap_from_ulog(
@@ -236,7 +251,6 @@ def create_per_topic_mcap_from_ulog(
     with open(output_path_per_topic_mcap, "wb") as stream:
         writer = Writer(stream)
         writer.start()
-
         schema_id = writer.register_schema(
             name=d.name,
             encoding="jsonschema",
@@ -253,6 +267,7 @@ def create_per_topic_mcap_from_ulog(
             values = list()
             for f in d.field_data:
                 values.append((f.field_name, f.type_str, d.data[f.field_name][i]))
+
             json_msg_instance = parse_values_to_json(values)
 
             timestamp_ns = int(d.data["timestamp"][i] * 1000)
@@ -260,6 +275,7 @@ def create_per_topic_mcap_from_ulog(
             writer.add_message(
                 channel_id=channel_id,
                 log_time=timestamp_ns,
+                sequence=i,
                 data=json.dumps(json_msg_instance).encode("utf-8"),
                 publish_time=timestamp_ns,
             )

@@ -23,7 +23,7 @@ def test_create_mcap_file_from_ulog(tmp_path):
         print(data_object.name)
         utils.create_per_topic_mcap_from_ulog(output_path_per_topic_mcap,
                                               data_object,
-                                              schema_registry_dict)
+                                              schema_registry_dict[data_object.name])
 
     assert output_path_per_topic_mcap.exists()
 

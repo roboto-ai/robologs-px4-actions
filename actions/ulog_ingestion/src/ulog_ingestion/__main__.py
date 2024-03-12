@@ -125,6 +125,7 @@ def process_data(
     message_count = len(ulog_data_object.data["timestamp"])
 
     json_schema_topic = utils.create_json_schema(ulog_message_format_object[topic_name].fields)
+
     schema_checksum = utils.compute_checksum(json_schema_topic)
 
     # Create Topic Record
@@ -183,6 +184,8 @@ def process_data(
             version=1,
         )
     )
+    relative_file_name = ulog_file_path.split(input_dir)[1][1:]
+    print(f"https://app-beta.roboto.ai/visualize/{utils.generate_config(file_record.file_id, relative_file_name)}")
     return
 
 
