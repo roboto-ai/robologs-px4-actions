@@ -18,13 +18,13 @@ from roboto.http import (
     SigV4AuthDecorator,
 )
 from roboto.transactions import TransactionManager
-
+from roboto.env import RobotoEnvKey
 import ulog_ingestion.utils as utils
 
 log = logging.getLogger("Ingesting ULog files to Roboto")
 
 
-def load_env_var(env_var: actions.InvocationEnvVar) -> str:
+def load_env_var(env_var: RobotoEnvKey) -> str:
     """
     Load an environment variable, and exit if it is not found.
 
@@ -48,11 +48,11 @@ def setup_env():
     Returns:
     - A tuple containing the organization ID, input directory, output directory, topic delegate, and dataset.
     """
-    roboto_service_url = load_env_var(actions.InvocationEnvVar.RobotoServiceUrl)
-    org_id = load_env_var(actions.InvocationEnvVar.OrgId)
-    invocation_id = load_env_var(actions.InvocationEnvVar.InvocationId)
-    input_dir = load_env_var(actions.InvocationEnvVar.InputDir)
-    output_dir = load_env_var(actions.InvocationEnvVar.OutputDir)
+    roboto_service_url = load_env_var(RobotoEnvKey.RobotoServiceUrl)
+    org_id = load_env_var(RobotoEnvKey.OrgId)
+    invocation_id = load_env_var(RobotoEnvKey.InvocationId)
+    input_dir = load_env_var(RobotoEnvKey.InputDir)
+    output_dir = load_env_var(RobotoEnvKey.OutputDir)
 
     http_client = HttpClient(default_auth=SigV4AuthDecorator("execute-api"))
 
@@ -64,8 +64,7 @@ def setup_env():
         invocation_id,
         invocation_delegate=actions.InvocationHttpDelegate(
             roboto_service_base_url=roboto_service_url, http_client=http_client
-        ),
-        org_id=org_id,
+        )
     )
     dataset = datasets.Dataset.from_id(
         invocation.data_source.data_source_id,
@@ -263,7 +262,7 @@ parser.add_argument(
     type=pathlib.Path,
     required=False,
     help="Directory containing input files to process",
-    default=os.environ.get(actions.InvocationEnvVar.InputDir.value),
+    default=os.environ.get(RobotoEnvKey.InputDir.value),
 )
 
 parser.add_argument(
@@ -273,7 +272,7 @@ parser.add_argument(
     type=pathlib.Path,
     required=False,
     help="Directory to which to write any output files to be uploaded",
-    default=os.environ.get(actions.InvocationEnvVar.OutputDir.value),
+    default=os.environ.get(RobotoEnvKey.OutputDir.value),
 )
 
 parser.add_argument(
