@@ -6,6 +6,7 @@ import logging
 import sys
 import pathlib
 import time
+from roboto.env import RobotoEnvKey
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
 from roboto.association import (
@@ -160,12 +161,19 @@ def process_data(
 
     relative_file_name = output_path_per_topic_mcap.split(output_dir_temp)[1][1:]
 
+
     # Upload MCAP File
     dataset.upload_file(
         pathlib.Path(output_path_per_topic_mcap), relative_file_name
     )
 
     file_id = dataset.get_file_info(relative_file_name).file_id
+
+
+    relative_file_name = ulog_file_path.split(input_dir)[1][1:]
+    print(
+        f"https://app-beta.roboto.ai/visualize/{utils.generate_config(file_record.file_id, relative_file_name)}"
+    )
 
     print(
         f"Setting default representation for topic: {topic_name_roboto}, file_id: {file_id}"
@@ -291,6 +299,8 @@ for root, dirs, f in os.walk(args.input_dir):
     for file in f:
         full_path = os.path.join(root, file)
         if utils.is_valid_ulog(full_path):
+
+            utils.add_metadata_to_file(full_path, topics=None)
 
             ingest_ulog(
                 ulog_file_path=full_path,
