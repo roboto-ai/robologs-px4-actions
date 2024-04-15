@@ -13,6 +13,7 @@ from bokeh.resources import CDN
 from bokeh.embed import components
 from bokeh.io import curdoc
 from roboto.domain import actions
+from roboto.env import RobotoEnvKey
 
 def process_ulg_file(ulog_file_path, output_folder):
     """Process a single .ulg file to generate and combine Bokeh plots into an HTML report."""
@@ -92,7 +93,7 @@ if __name__ == "__main__":
         type=pathlib.Path,
         required=False,
         help="Directory containing input files to process",
-        default=os.environ.get(actions.InvocationEnvVar.InputDir.value),
+        default=os.environ.get(RobotoEnvKey.InputDir.value),
     )
     parser.add_argument(
         "-o",
@@ -101,7 +102,7 @@ if __name__ == "__main__":
         type=pathlib.Path,
         required=False,
         help="Directory to which to write any output files to be uploaded",
-        default=os.environ.get(actions.InvocationEnvVar.OutputDir.value),
+        default=os.environ.get(RobotoEnvKey.OutputDir.value),
     )
 
     args = parser.parse_args()
