@@ -113,16 +113,6 @@ def main(args):
                         ulg_file = ulg_file.update(file_update_request)
                         logger.info(f"Tagging {file} with {tag}")
 
-        # with open(dataset_metadata_path, "w") as json_file:
-        #     metadata_dict = {
-        #         "put_tags": list(set(put_tags)),
-        #         "remove_tags": [],
-        #         "put_fields": put_fields,
-        #         "remove_fields": [],
-        #     }
-        #     logger.info(f"Writing {dataset_metadata_path}...")
-        #     json.dump(metadata_dict, json_file, indent=4)
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
