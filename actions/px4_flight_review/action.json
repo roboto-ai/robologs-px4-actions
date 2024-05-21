@@ -1,7 +1,7 @@
 {
     "name": "px4_flight_review",
-    "short_description": "Generate interactive plots to analyze PX4 flights.",
-    "description": "This Action extracts data from ULog files (.ulg) and generates interactive html plots to analyze PX4 flights. Under the hood, it uses the [flight_review](https://github.com/PX4/flight_review) library that is maintained by the PX4 community.",
+    "short_description": "Generate flight review report for PX4 flights.",
+    "description": "This Action extracts data from ULog files (.ulg) and generates interactive html reports to analyze PX4 flights. Under the hood, it uses the [flight_review](https://github.com/PX4/flight_review) library that is maintained by the PX4 community.",
     "compute_requirements": {
         "vCPU": 1024,
         "memory": 2048,
