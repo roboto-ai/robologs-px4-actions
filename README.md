@@ -23,13 +23,13 @@ The package currently includes the following Actions:
 
 # Quickstart
 
-Try an Action called: `ulog_info`:
+Try an Action called: `tag_ulog`:
 
 ```bash
 
 # 0. Clone this repository
 git clone https://github.com/roboto-ai/robologs-px4-actions.git
-cd robologs-px4-actions/actions/ulog_info/
+cd robologs-px4-actions/actions/tag_ulog/
 
 # 1. Set up a virtual environment for this project and install dependencies, which includes the `roboto` CLI:
 ./scripts/setup.sh
