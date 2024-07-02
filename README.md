@@ -1,4 +1,4 @@
-# What is robologs-px4-actions
+# robologs-px4-actions
 
 `robologs-px4-actions` is an open-source collection of software modules to extract, process and analyze PX4 data. These modules, referred to as Actions, are essentially containerized Python scripts, and form part of the broader [robologs](https://github.com/roboto-ai/robologs) library.
 
@@ -6,9 +6,9 @@ Actions can range from simple data transformations to more complex algorithms, a
 
 The package currently includes the following Actions:
 
+- `px4_flight_review`: Generate flight review html plots for PX4 flights.
 - `tag_ulog`: Scan .ulg files for any errors and emit tags.
 - `ulog_to_csv`: Convert .ulg files to .csv files.
-- `px4_flight_review`: Generate interactive plots to analyze PX4 flights.
 
 # Prerequisites
 
