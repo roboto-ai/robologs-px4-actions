@@ -5,6 +5,10 @@ set -euo pipefail
 SCRIPTS_ROOT=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd)
 PACKAGE_ROOT=$(dirname "${SCRIPTS_ROOT}")
 
+# Build image and run unit tests
+echo "Building image..."
+$PACKAGE_ROOT/scripts/build.sh
+
 # Early exit if virtual environment does not exist and/or roboto is not yet installed
 if [ ! -f "$PACKAGE_ROOT/.venv/bin/roboto" ]; then
     echo "Virtual environment with roboto CLI does not exist. Please run ./scripts/setup.sh first."
